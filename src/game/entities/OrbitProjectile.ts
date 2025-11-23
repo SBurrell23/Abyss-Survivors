@@ -41,7 +41,7 @@ export class OrbitProjectile extends Projectile {
   }
 
   // We don't use onHit for recovery anymore, just ticks
-  onHit(target: any) {
+  onHit(_target: any) {
      // If target has a unique ID (we need to add one to Enemy), check timer
      // For now, let's just assume target is passed
      // We need to modify Game to pass target, or Enemy to have ID.

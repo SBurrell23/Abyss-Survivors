@@ -1,6 +1,7 @@
-import { Game } from '../Game';
+import { Game } from './Game';
 import upgradesData from './data/upgrades.json';
 import { OrbitProjectile } from './entities/OrbitProjectile';
+import { Projectile } from './entities/Projectile';
 
 export interface UpgradeDef {
   id: string;
@@ -81,7 +82,7 @@ export class UpgradeManager {
           case 'increment_protection_ring':
               // Rebuild ring
               const count = this.playerUpgrades.get(upgrade.id)!.count;
-              this.game.projectiles = this.game.projectiles.filter(proj => !(proj instanceof OrbitProjectile));
+              this.game.projectiles = this.game.projectiles.filter((proj: Projectile) => !(proj instanceof OrbitProjectile));
               for(let i=0; i<count; i++) {
                   const angle = (Math.PI * 2 / count) * i;
                   this.game.projectiles.push(new OrbitProjectile(this.game, angle));
