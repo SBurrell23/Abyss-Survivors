@@ -1,4 +1,4 @@
-import { Game } from './Game';
+import { Game } from '../Game';
 import upgradesData from './data/upgrades.json';
 import { OrbitProjectile } from './entities/OrbitProjectile';
 
@@ -32,12 +32,6 @@ export class UpgradeManager {
   }
 
   getRandomUpgrades(count: number = 3): UpgradeDef[] {
-    // Weighted random? Or just flat for now.
-    // Let's implement simple rarity weights:
-    // Common: 70%, Rare: 25%, Legendary: 5%
-    // const pool: UpgradeDef[] = [];
-    
-    // Just pure random for now, but let's try to respect weights in generation
     const result: UpgradeDef[] = [];
     
     while (result.length < count) {
@@ -47,11 +41,10 @@ export class UpgradeManager {
       else if (rand > 0.70) rarity = 'rare';
 
       const candidates = this.upgrades.filter(u => u.rarity === rarity);
-      if (candidates.length === 0) continue; // Fallback if no legendary defined etc
+      if (candidates.length === 0) continue; 
 
       const pick = candidates[Math.floor(Math.random() * candidates.length)];
       
-      // Allow duplicates in list? Usually no.
       if (!result.includes(pick)) {
         result.push(pick);
       }
@@ -75,27 +68,68 @@ export class UpgradeManager {
       } else {
         p[upgrade.stat] += upgrade.value!;
       }
-      // Special case for HP to heal? or just max HP increase?
-      // Usually max HP increase also heals amount or keeps percentage. 
-      // For simplicity:
+      
       if (upgrade.stat === 'maxHp') {
         p.hp += upgrade.value!;
       }
     } else if (upgrade.type === 'special') {
-      if (upgrade.effect === 'increment_multishot') {
-        this.game.player.multiShotLevel++;
-      } else if (upgrade.effect === 'increment_protection_ring') {
-         // Add a new orb
-         const count = this.playerUpgrades.get(upgrade.id)!.count;
-         // Add orbital
-         // Calculate angle offset based on count or just add random/spaced?
-         // Spacing them evenly requires re-adjusting all.
-         // Simplest: Just add one at 0. Or better: remove all and re-add evenly.
-         this.game.projectiles = this.game.projectiles.filter(p => !(p instanceof OrbitProjectile));
-         for(let i=0; i<count; i++) {
-             const angle = (Math.PI * 2 / count) * i;
-             this.game.projectiles.push(new OrbitProjectile(this.game, angle));
-         }
+      const p = this.game.player;
+      switch (upgrade.effect) {
+          case 'increment_multishot':
+              p.multiShotLevel++;
+              break;
+          case 'increment_protection_ring':
+              // Rebuild ring
+              const count = this.playerUpgrades.get(upgrade.id)!.count;
+              this.game.projectiles = this.game.projectiles.filter(proj => !(proj instanceof OrbitProjectile));
+              for(let i=0; i<count; i++) {
+                  const angle = (Math.PI * 2 / count) * i;
+                  this.game.projectiles.push(new OrbitProjectile(this.game, angle));
+              }
+              break;
+          case 'increment_pierce':
+              p.pierceCount++;
+              break;
+          case 'increment_explosion':
+              p.explosionRadius += 30;
+              break;
+          case 'increment_homing':
+              p.homingStrength += 0.5;
+              break;
+          case 'sniper_module':
+              p.projectileSpeedMult += 0.3;
+              p.projectileRangeMult += 0.3;
+              break;
+          case 'unlock_depth_charge':
+              p.depthChargeLevel++;
+              break;
+          case 'unlock_plasma':
+              p.plasmaFieldLevel++;
+              break;
+          case 'unlock_vampire':
+              p.vampireHeal++;
+              break;
+          case 'unlock_deep_pressure':
+              p.deepPressure = true;
+              break;
+          case 'unlock_scatter':
+              p.scatterLevel++;
+              break;
+          case 'unlock_rear_guns':
+              p.rearGunsLevel++;
+              break;
+          case 'unlock_helix':
+              p.helixEnabled = true;
+              break;
+          case 'increment_knockback':
+              p.knockbackStrength += 100; // Pixels per second impulse
+              break;
+          case 'unlock_freeze':
+              p.freezeChance += 0.1; // +10% chance
+              break;
+          case 'unlock_giant':
+              p.giantTorpedoLevel++;
+              break;
       }
     }
   }
@@ -104,4 +138,3 @@ export class UpgradeManager {
       return Array.from(this.playerUpgrades.values());
   }
 }
-

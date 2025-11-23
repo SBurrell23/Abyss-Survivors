@@ -16,8 +16,39 @@ export class Player {
   multiShotLevel: number = 0;
   magnetRadius: number = 100;
 
+  // New Stats
+  pierceCount: number = 0;
+  explosionRadius: number = 0;
+  homingStrength: number = 0; // 0 to 1
+  projectileSpeedMult: number = 1.0;
+  projectileRangeMult: number = 1.0;
+  critChance: number = 0; // 0 to 1
+  vampireHeal: number = 0; // HP per 50 kills
+  damageReduction: number = 0; // 0 to 1
+  deepPressure: boolean = false;
+  scavengerChance: number = 0; // 0 to 1
+  
+  // Newest Stats
+  scatterLevel: number = 0;
+  rearGunsLevel: number = 0;
+  helixEnabled: boolean = false;
+  knockbackStrength: number = 0;
+  freezeChance: number = 0;
+  giantTorpedoLevel: number = 0;
+  shotsFired: number = 0;
+  
+  // Ability Levels
+  plasmaFieldLevel: number = 0;
+  depthChargeLevel: number = 0;
+
+  // Timers
   shootCooldown: number = 0;
-  attackInterval: number = 0.5; // Seconds between shots
+  attackInterval: number = 0.5;
+  
+  depthChargeTimer: number = 0;
+  plasmaTimer: number = 0; // For damage tick
+
+  vampireCounter: number = 0; // Track kills for vampire
 
   constructor(game: Game, x: number, y: number) {
     this.game = game;
@@ -41,10 +72,49 @@ export class Player {
     // Shooting Logic
     this.shootCooldown -= dt;
     if (this.shootCooldown <= 0) {
-        // this.shootNearestEnemy();
         this.shootAtMouse();
         this.shootCooldown = this.attackInterval;
     }
+    
+    // Ability Timers
+    this.updateAbilities(dt);
+  }
+  
+  updateAbilities(dt: number) {
+      // Depth Charge (Every 2s)
+      if (this.depthChargeLevel > 0) {
+          this.depthChargeTimer -= dt;
+          if (this.depthChargeTimer <= 0) {
+              this.spawnDepthCharge();
+              this.depthChargeTimer = 2.0;
+          }
+      }
+      
+      // Plasma Field (Continuous, tick every 0.5s)
+      if (this.plasmaFieldLevel > 0) {
+          this.plasmaTimer -= dt;
+          if (this.plasmaTimer <= 0) {
+              this.triggerPlasmaTick();
+              this.plasmaTimer = 0.5;
+          }
+      }
+  }
+  
+  spawnDepthCharge() {
+      // Placeholder: Spawn depth charge entity
+      this.game.player.spawnDepthCharge(); // Hook
+  }
+  
+  triggerPlasmaTick() {
+      // AoE around player
+      const radius = 50 + (this.plasmaFieldLevel * 10);
+      const damage = 5 * this.plasmaFieldLevel;
+      
+      this.game.enemies.forEach(e => {
+          if (this.position.distanceTo(e.position) < radius + e.radius) {
+              e.takeDamage(damage);
+          }
+      });
   }
 
   shootAtMouse() {
@@ -55,10 +125,25 @@ export class Player {
       const worldMouse = new Vector2(worldMouseX, worldMouseY);
 
       const dir = worldMouse.sub(this.position).normalize();
-      const speed = 400;
+      const speed = 400 * this.projectileSpeedMult;
       
+      // Increment shots fired
+      this.shotsFired++;
+      
+      // Check for Giant Shot
+      let isGiantShot = false;
+      if (this.giantTorpedoLevel > 0 && this.shotsFired % 10 === 0) {
+          isGiantShot = true;
+      }
+
       // Base shot
-      this.fireProjectile(dir, speed);
+      this.fireProjectile(dir, speed, isGiantShot);
+      
+      // Rear Guns
+      if (this.rearGunsLevel > 0) {
+          const rearDir = dir.scale(-1);
+          this.fireProjectile(rearDir, speed);
+      }
 
       // Multi-shot
       if (this.multiShotLevel > 0) {
@@ -79,51 +164,50 @@ export class Player {
       }
   }
 
-  shootNearestEnemy() {
-      let nearest = null;
-      let minDst = Infinity;
-      
-      for (const enemy of this.game.enemies) {
-          const dst = this.position.distanceTo(enemy.position);
-          if (dst < minDst) {
-              minDst = dst;
-              nearest = enemy;
-          }
-      }
-
-      if (nearest && minDst < 600) { // Range check
-          const dir = nearest.position.sub(this.position).normalize();
-          const speed = 400;
-          
-          // Base shot
-          this.fireProjectile(dir, speed);
-
-          // Multi-shot
-          if (this.multiShotLevel > 0) {
-             for (let i = 1; i <= this.multiShotLevel; i++) {
-                 // Alternate angles: +15, -15, +30, -30 etc.
-                 const angle = (Math.PI / 12) * i; // 15 degrees
-                 
-                 // Rotate dir vector
-                 const cos = Math.cos(angle);
-                 const sin = Math.sin(angle);
-                 const dir1 = new Vector2(dir.x * cos - dir.y * sin, dir.x * sin + dir.y * cos);
-                 
-                 const cos2 = Math.cos(-angle);
-                 const sin2 = Math.sin(-angle);
-                 const dir2 = new Vector2(dir.x * cos2 - dir.y * sin2, dir.x * sin2 + dir.y * cos2);
-
-                 this.fireProjectile(dir1, speed);
-                 this.fireProjectile(dir2, speed);
-             }
-          }
-      }
-  }
-
-  fireProjectile(dir: Vector2, speed: number) {
+  fireProjectile(dir: Vector2, speed: number, isGiant: boolean = false) {
       const velocity = dir.scale(speed);
       const projectile = new Projectile(this.game, this.position.x, this.position.y, velocity);
-      projectile.damage = this.damage;
+      
+      // Apply stats
+      let finalDamage = this.damage;
+      
+      // Deep Pressure Logic
+      if (this.deepPressure) {
+          const bonus = 1 + (this.game.depth / 50) * 0.01;
+          finalDamage *= bonus;
+      }
+      
+      // Critical Hit
+      if (Math.random() < this.critChance) {
+          finalDamage *= 2;
+          projectile.isCritical = true;
+      }
+      
+      projectile.damage = finalDamage;
+      projectile.pierce = this.pierceCount;
+      projectile.explosionRadius = this.explosionRadius;
+      projectile.isHoming = this.homingStrength > 0;
+      projectile.duration *= this.projectileRangeMult;
+      
+      // New Props
+      projectile.isHelix = this.helixEnabled;
+      projectile.knockbackForce = this.knockbackStrength;
+      if (Math.random() < this.freezeChance) {
+          projectile.freezeDuration = 3.0; // 3s freeze
+      }
+      if (this.scatterLevel > 0) {
+          projectile.scatterOnHit = true;
+      }
+      
+      if (isGiant) {
+          projectile.isGiant = true;
+          projectile.damage *= 5; // Massive damage
+          projectile.pierce += 100; // Pierce everything
+          projectile.radius *= 3; 
+          projectile.knockbackForce += 500; // Massive push
+          projectile.explosionRadius += 100;
+      }
+      
       this.game.projectiles.push(projectile);
   }
 
@@ -131,6 +215,18 @@ export class Player {
   draw(ctx: CanvasRenderingContext2D) {
     ctx.save();
     ctx.translate(this.position.x, this.position.y);
+    
+    // Draw Plasma Field
+    if (this.plasmaFieldLevel > 0) {
+        const radius = 50 + (this.plasmaFieldLevel * 10);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
     
     // Calculate angle to mouse
     const mouseScreen = this.game.mousePosition;
@@ -148,10 +244,7 @@ export class Player {
     // Draw centered, scaled up by 2
     const scale = 2;
     
-    // Since the sprite faces right by default (based on pixel data),
-    // rotating by 'angle' makes it point to the mouse.
-    // However, if it's facing left (angle > PI/2 or < -PI/2), it will be upside down.
-    // To fix upside down rendering when facing left:
+    // Fix upside down rendering when facing left
     if (Math.abs(angle) > Math.PI / 2) {
         ctx.scale(1, -1);
     }
@@ -162,11 +255,22 @@ export class Player {
   }
 
   takeDamage(amount: number) {
-    this.hp -= amount;
+    // Apply Damage Reduction
+    const reducedAmount = amount * (1 - this.damageReduction);
+    this.hp -= reducedAmount;
     if (this.hp <= 0) {
         this.hp = 0;
         this.game.gameOver();
     }
   }
+  
+  onEnemyKilled() {
+      if (this.vampireHeal > 0) {
+          this.vampireCounter++;
+          if (this.vampireCounter >= 50) {
+              this.vampireCounter = 0;
+              this.hp = Math.min(this.hp + 1, this.maxHp);
+          }
+      }
+  }
 }
-

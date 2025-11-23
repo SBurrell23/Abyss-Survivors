@@ -3,6 +3,7 @@ import { Enemy, MonsterStats } from './entities/Enemy';
 import { OrbitProjectile } from './entities/OrbitProjectile';
 import { Projectile } from './entities/Projectile';
 import { XPOrb } from './entities/XPOrb';
+import { DepthCharge } from './entities/NewEntities';
 import { Vector2 } from './utils';
 import { UpgradeManager } from './UpgradeManager';
 import monstersData from './data/monsters.json';
@@ -29,6 +30,9 @@ export class Game {
   projectiles: Projectile[] = [];
   xpOrbs: XPOrb[] = [];
   
+  // New Entities Lists
+  depthCharges: DepthCharge[] = [];
+  
   upgradeManager: UpgradeManager;
   
   score: number = 0;
@@ -44,6 +48,9 @@ export class Game {
   // Camera
   camera: Vector2 = new Vector2(0, 0);
   
+  // Debug
+  xpMultiplier: number = 1;
+
   // Stateless Tiled Particle System
   particleTileSize: number = 1024;
   particleDefs: Particle[] = [];
@@ -61,6 +68,24 @@ export class Game {
 
     this.player = new Player(this, 0, 0);
     this.upgradeManager = new UpgradeManager(this);
+    
+    // Override Player spawn methods to hook into Game
+    this.player.spawnDepthCharge = () => {
+        this.depthCharges.push(new DepthCharge(this, this.player.position.x, this.player.position.y));
+    };
+  }
+  
+  createExplosion(pos: Vector2, radius: number, damage: number) {
+      // Simple visual or damage if damage > 0
+      if (damage > 0) {
+          this.enemies.forEach(e => {
+             if (pos.distanceTo(e.position) < radius + e.radius) {
+                 e.takeDamage(damage);
+             }
+          });
+      }
+      
+      // TODO: Add visual effect entity
   }
   
   initParticleDefs() {
@@ -196,15 +221,17 @@ export class Game {
     window.addEventListener('keydown', (e) => {
       this.input.keys[e.key] = true;
       
-      // Debug: Ctrl + P to toggle 25x speed
+      // Debug: Ctrl + P to toggle 25x speed and 100x XP
       if (e.ctrlKey && e.code === 'KeyP') {
           e.preventDefault(); 
           if (this.player.speed === 200) {
               this.player.speed = 5000; 
-              console.log("Debug: Speed set to 5000 (25x)");
+              this.xpMultiplier = 100;
+              console.log("Debug: Speed set to 5000 (25x), XP x100");
           } else {
               this.player.speed = 200; 
-              console.log("Debug: Speed reset to 200");
+              this.xpMultiplier = 1;
+              console.log("Debug: Speed reset to 200, XP x1");
           }
       }
     });
@@ -281,6 +308,10 @@ export class Game {
     // Update projectiles
     this.projectiles.forEach(p => p.update(dt));
     this.projectiles = this.projectiles.filter(p => p.active);
+    
+    // Update Depth Charges
+    this.depthCharges.forEach(d => d.update(dt));
+    this.depthCharges = this.depthCharges.filter(d => d.active);
 
     // Update XP Orbs
     this.xpOrbs.forEach(o => o.update(dt));
@@ -372,6 +403,8 @@ export class Game {
      }
 
      this.enemies.push(new Enemy(this, spawnPos.x, spawnPos.y, selectedMonster));
+     
+     // Scavenger Protocol Drop? (Only on kill, moved to checkCollisions or Enemy)
   }
 
   checkCollisions() {
@@ -381,6 +414,17 @@ export class Game {
               this.player.takeDamage(10 * 0.016); 
           }
       }
+      
+      // Depth Charges vs Enemies
+      this.depthCharges.forEach(dc => {
+          if (!dc.active) return;
+          for (const enemy of this.enemies) {
+              if (dc.position.distanceTo(enemy.position) < (dc.radius + enemy.radius)) {
+                  dc.explode();
+                  break;
+              }
+          }
+      });
 
       // Projectiles vs Enemies
       for (const projectile of this.projectiles) {
@@ -392,7 +436,7 @@ export class Game {
                   if (projectile.position.distanceTo(enemy.position) < (projectile.radius + enemy.radius)) {
                       if (projectile.canHit(enemy)) {
                           enemy.takeDamage(projectile.damage);
-                          // Visual feedback could be added here
+                          this.onEnemyHit(enemy);
                       }
                   }
               }
@@ -401,8 +445,19 @@ export class Game {
 
           for (const enemy of this.enemies) {
               if (projectile.position.distanceTo(enemy.position) < (projectile.radius + enemy.radius)) {
-                  enemy.takeDamage(projectile.damage);
-                  projectile.onHit(enemy);
+                  // Check if projectile can hit (for piercing)
+                  if (projectile.canHit(enemy)) {
+                      enemy.takeDamage(projectile.damage);
+                      projectile.onHit(enemy);
+                      this.onEnemyHit(enemy);
+                  }
+                  // If not piercing or used up pierce, break handled in onHit logic if needed
+                  // But standard loop continues unless broken. 
+                  // If piercing, we want to continue checking other enemies?
+                  // No, usually 1 projectile hits 1 thing per frame unless it's a huge railgun.
+                  // But if it pierces, it should pass through.
+                  // If we break here, we stop checking this projectile against other enemies THIS FRAME.
+                  // That is correct for a small projectile.
                   break; 
               }
           }
@@ -416,9 +471,24 @@ export class Game {
           }
       }
   }
+  
+  onEnemyHit(enemy: Enemy) {
+      if (enemy.hp <= 0) {
+          // Check scavenger protocol
+          if (this.player.scavengerChance > 0 && Math.random() < this.player.scavengerChance) {
+              // Drop Health Pack (Just instant heal for now?)
+              // Or maybe spawn a heart pickup?
+              // Instant heal for simplicity
+              this.player.hp = Math.min(this.player.maxHp, this.player.hp + 20);
+              // Visual Text?
+          }
+          
+          this.player.onEnemyKilled();
+      }
+  }
 
   collectXP(amount: number) {
-      this.xp += amount;
+      this.xp += amount * this.xpMultiplier;
       if (this.xp >= this.xpToNextLevel) {
           this.levelUp();
       }
@@ -596,7 +666,9 @@ export class Game {
         this.ctx.stroke();
     }
 
+    // Draw Game Entities
     this.xpOrbs.forEach(o => o.draw(this.ctx));
+    this.depthCharges.forEach(d => d.draw(this.ctx));
     this.enemies.forEach(e => e.draw(this.ctx));
     this.projectiles.forEach(p => p.draw(this.ctx));
     this.player.draw(this.ctx);

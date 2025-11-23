@@ -71,6 +71,164 @@
     "stat": "magnetRadius",
     "value": 1.5,
     "op": "multiply"
+  },
+  {
+    "id": "piercing_warheads",
+    "name": "Piercing Warheads",
+    "description": "Torpedoes pass through 1 more enemy",
+    "rarity": "rare",
+    "icon": "🏹",
+    "type": "special",
+    "effect": "increment_pierce"
+  },
+  {
+    "id": "explosive_payload",
+    "name": "Explosive Payload",
+    "description": "Projectiles deal AoE damage on impact",
+    "rarity": "rare",
+    "icon": "💥",
+    "type": "special",
+    "effect": "increment_explosion"
+  },
+  {
+    "id": "homing_tech",
+    "name": "Homing Tech",
+    "description": "Torpedoes slightly track enemies",
+    "rarity": "legendary",
+    "icon": "📡",
+    "type": "special",
+    "effect": "increment_homing"
+  },
+  {
+    "id": "sniper_module",
+    "name": "Sniper Module",
+    "description": "Increases range and speed by 30%",
+    "rarity": "common",
+    "icon": "🎯",
+    "type": "special",
+    "effect": "sniper_module"
+  },
+  {
+    "id": "depth_charge",
+    "name": "Depth Charge",
+    "description": "Fires a heavy bomb downwards",
+    "rarity": "rare",
+    "icon": "⚓",
+    "type": "special",
+    "effect": "unlock_depth_charge"
+  },
+  {
+    "id": "critical_circuits",
+    "name": "Critical Circuits",
+    "description": "+10% Chance for double damage",
+    "rarity": "common",
+    "icon": "☣️",
+    "type": "stat",
+    "stat": "critChance",
+    "value": 0.1,
+    "op": "add"
+  },
+  {
+    "id": "plasma_field",
+    "name": "Plasma Field",
+    "description": "Damaging aura around submarine",
+    "rarity": "rare",
+    "icon": "⚛️",
+    "type": "special",
+    "effect": "unlock_plasma"
+  },
+  {
+    "id": "vampiric_torpedoes",
+    "name": "Vampiric Torpedoes",
+    "description": "Heal 1 HP per 50 kills",
+    "rarity": "legendary",
+    "icon": "🧛",
+    "type": "special",
+    "effect": "unlock_vampire"
+  },
+  {
+    "id": "titanium_plating",
+    "name": "Titanium Plating",
+    "description": "Reduces incoming damage by 10%",
+    "rarity": "common",
+    "icon": "⛓️",
+    "type": "stat",
+    "stat": "damageReduction",
+    "value": 0.1,
+    "op": "add"
+  },
+  {
+    "id": "scavenger_protocol",
+    "name": "Scavenger Protocol",
+    "description": "1% Chance for enemies to drop health",
+    "rarity": "common",
+    "icon": "🩹",
+    "type": "stat",
+    "stat": "scavengerChance",
+    "value": 0.01,
+    "op": "add"
+  },
+  {
+    "id": "deep_pressure",
+    "name": "Deep Pressure",
+    "description": "Damage increases with depth",
+    "rarity": "legendary",
+    "icon": "⏬",
+    "type": "special",
+    "effect": "unlock_deep_pressure"
+  },
+  {
+    "id": "scatter_shot",
+    "name": "Scatter Shot",
+    "description": "Torpedoes split on impact",
+    "rarity": "rare",
+    "icon": "✨",
+    "type": "special",
+    "effect": "unlock_scatter"
+  },
+  {
+    "id": "rear_guns",
+    "name": "Rear Guns",
+    "description": "Fire a torpedo backwards",
+    "rarity": "common",
+    "icon": "🔙",
+    "type": "special",
+    "effect": "unlock_rear_guns"
+  },
+  {
+    "id": "helix_rounds",
+    "name": "Helix Rounds",
+    "description": "Torpedoes move in a wide wave",
+    "rarity": "common",
+    "icon": "🧬",
+    "type": "special",
+    "effect": "unlock_helix"
+  },
+  {
+    "id": "knockback_ammo",
+    "name": "Knockback Ammo",
+    "description": "Torpedoes push enemies away",
+    "rarity": "common",
+    "icon": "🥊",
+    "type": "special",
+    "effect": "increment_knockback"
+  },
+  {
+    "id": "cryo_rounds",
+    "name": "Cryo Rounds",
+    "description": "Chance to freeze enemies",
+    "rarity": "rare",
+    "icon": "❄️",
+    "type": "special",
+    "effect": "unlock_freeze"
+  },
+  {
+    "id": "giant_torpedo",
+    "name": "Giant Torpedo",
+    "description": "Every 10th shot is MASSIVE",
+    "rarity": "legendary",
+    "icon": "🚀",
+    "type": "special",
+    "effect": "unlock_giant"
   }
 ]
-
