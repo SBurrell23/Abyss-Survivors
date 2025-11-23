@@ -81,10 +81,45 @@ export class Enemy {
     const dir = this.game.player.position.sub(this.position);
     
     // Flip sprite based on direction
-    if (dir.x < 0) ctx.scale(1, -1); // Upside down if rotated? No.
-    // Standard rotation is easier for top-down
+    // Most sprites face RIGHT by default.
+    // Standard rotation is easier for top-down if they have a distinct "front"
     const angle = Math.atan2(dir.y, dir.x);
-    ctx.rotate(angle);
+    
+    // If the sprite is side-view (like fish usually are), we might want to just flip X
+    // But our sprites are top-down-ish.
+    // Actually, pixel art fish usually face Left or Right.
+    // If we rotate them, they might look weird if they are side-profile.
+    // Let's assume sprites face RIGHT (0 radians).
+    
+    // For side-profile sprites (fish, shark), rotation works if they are drawn top-down.
+    // If they are side-view, rotation makes them swim on their side vertical.
+    // Let's assume top-down view for everything.
+    
+    // However, if the user wants them to "face the right direction",
+    // and they currently don't, maybe the sprite default orientation is wrong?
+    // The sprites are drawn facing... well, let's check pixel data.
+    // Fish: Nose is right (mostly).
+    // Crab: Front is top? Or right?
+    // Squid: Tentacles bottom.
+    
+    // Adjust rotation offset based on sprite type
+    let rotationOffset = 0;
+    if (this.stats.id.includes('squid')) rotationOffset = Math.PI / 2; // Squid faces up/down
+    if (this.stats.id.includes('crab')) rotationOffset = Math.PI / 2; // Crab faces up/down
+    if (this.stats.id.includes('ray')) rotationOffset = Math.PI / 2; // Ray faces up
+    if (this.stats.id.includes('turtle')) rotationOffset = Math.PI / 2; // Turtle faces up
+    
+    // If it's a side-scroller sprite but used in top-down, we might just want to flip X
+    // instead of rotating?
+    // But "facing the player" implies rotation for 360 movement.
+    
+    ctx.rotate(angle + rotationOffset);
+    
+    // Fix for upside down sprites when moving left?
+    // If we just rotate, they turn upside down.
+    // To prevent upside down rendering:
+    // if (Math.abs(angle) > Math.PI / 2) ctx.scale(1, -1);
+    // But that depends on the sprite symmetry.
 
     // Map stats.id or behavior to sprite
     let spriteName = 'enemy_fish';

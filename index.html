@@ -5,30 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Abyss Survivors</title>
     <style>
-      body { margin: 0; overflow: hidden; background-color: #001e36; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-      canvas { display: block; }
-      #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+      body { 
+          margin: 0; 
+          overflow: hidden; 
+          background-color: #001e36; 
+          color: white; 
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          cursor: crosshair; /* Global crosshair cursor */
+      }
+      canvas { display: block; cursor: crosshair; }
+      #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; cursor: crosshair; }
       .ui-element { position: absolute; pointer-events: auto; }
       
       /* Stats Area */
       #stats { 
-          top: 20px; left: 20px; 
-          display: flex; 
-          flex-direction: column; 
-          gap: 8px;
-          font-weight: bold;
-          text-shadow: 2px 2px 2px black;
+         display: none; /* Replaced by individual elements */
       }
-      .stat-row { display: flex; align-items: center; gap: 10px; }
-      .stat-label { width: 50px; color: #aaa; }
-      .stat-value { color: #fff; font-size: 18px; }
+      
+      #score-container {
+          position: absolute;
+          bottom: 20px; right: 20px;
+          font-size: 24px; font-weight: bold;
+          text-shadow: 2px 2px 2px black;
+          color: #fff;
+      }
 
       /* HP Bar */
       #hp-bar-container {
-          width: 200px; height: 20px; 
+          width: 300px; height: 25px; 
           background: #333; border: 2px solid #555; 
           border-radius: 4px; overflow: hidden;
-          position: relative;
+          position: absolute;
+          top: 20px; left: 50%;
+          transform: translateX(-50%);
+          box-shadow: 0 0 10px rgba(0,0,0,0.5);
       }
       #hp-bar { width: 100%; height: 100%; background: #ff4444; transition: width 0.2s; }
       #hp-text { 
@@ -38,8 +48,61 @@
       }
 
       /* XP Bar */
-      #xp-bar-container { bottom: 20px; left: 10%; width: 80%; height: 15px; background: #222; border: 1px solid #444; border-radius: 10px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-      #xp-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #00bcd4, #00ffaa); transition: width 0.2s; }
+      #xp-bar-container { 
+          bottom: 10px; left: 20%; width: 60%; height: 10px; /* Narrower, thinner, lower */
+          background: #222; border: 1px solid #444; border-radius: 5px; overflow: hidden; 
+          box-shadow: 0 0 10px rgba(0,0,0,0.5); 
+      }
+      #xp-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.2s; } /* Greenish */
+
+      /* Depth Meter V2 */
+      #depth-meter-container {
+          position: absolute;
+          top: 20px; bottom: 20px; left: 20px; /* Symmetric top/bottom */
+          width: 30px; 
+          background: linear-gradient(to bottom, #00bcd4 0%, #000044 100%);
+          border: 2px solid #fff;
+          border-radius: 4px; 
+          overflow: visible; 
+          box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      }
+      
+      /* The indicator sub */
+      #depth-cursor {
+          position: absolute;
+          top: 0%; left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 20px;
+          transition: top 0.1s linear;
+          text-shadow: 0 0 5px black;
+      }
+      
+      /* Markers */
+      .depth-marker {
+          position: absolute;
+          right: -45px;
+          font-size: 12px;
+          color: #fff;
+          font-weight: bold;
+          transform: translateY(-50%);
+          text-align: left;
+          width: 40px;
+          text-shadow: 1px 1px 2px black;
+      }
+      .depth-tick {
+          position: absolute;
+          left: 0; width: 100%; height: 1px;
+          background: rgba(255,255,255,0.5);
+      }
+      
+      #depth-label-title {
+          position: absolute;
+          top: -20px; left: 50%;
+          transform: translateX(-50%);
+          font-size: 12px; font-weight: bold; color: #00bcd4;
+          text-shadow: 1px 1px 1px black;
+          padding-bottom: 5px;
+      }
 
       /* Inventory */
       #inventory-container {
@@ -87,6 +150,7 @@
           gap: 25px;
           margin-top: 30px;
       }
+      
       @keyframes pulse-glow {
         0% { box-shadow: 0 0 20px rgba(255,255,255,0.1); }
         50% { box-shadow: 0 0 30px rgba(255,255,255,0.3); }
@@ -100,7 +164,7 @@
         padding: 25px;
         width: 220px;
         height: 320px;
-        cursor: pointer;
+        cursor: pointer; /* Keep pointer for interactables */
         text-align: center;
         display: flex;
         flex-direction: column;
@@ -156,7 +220,7 @@
           color: #000;
           border: none;
           border-radius: 50px;
-          cursor: pointer;
+          cursor: pointer; /* Keep pointer for button */
           font-weight: bold;
           transition: all 0.2s;
           box-shadow: 0 0 20px rgba(0, 188, 212, 0.4);
@@ -170,13 +234,35 @@
   </head>
   <body>
     <div id="ui-layer">
-      <div id="stats" class="ui-element">
-        <div id="hp-bar-container">
-            <div id="hp-bar"></div>
-            <div id="hp-text">100 / 100</div>
-        </div>
-        <div class="stat-row"><span class="stat-label">LVL</span> <span id="level" class="stat-value">1</span></div>
-        <div class="stat-row"><span class="stat-label">SCR</span> <span id="score" class="stat-value">0</span></div>
+      <!-- Depth Meter -->
+      <div id="depth-meter-container">
+          <!-- Ticks -->
+          <div class="depth-tick" style="top: 0%"></div>
+          <div class="depth-marker" style="top: 0%">0m</div>
+          
+          <div class="depth-tick" style="top: 25%"></div>
+          <div class="depth-marker" style="top: 25%">250m</div>
+          
+          <div class="depth-tick" style="top: 50%"></div>
+          <div class="depth-marker" style="top: 50%">500m</div>
+          
+          <div class="depth-tick" style="top: 75%"></div>
+          <div class="depth-marker" style="top: 75%">750m</div>
+          
+          <div class="depth-tick" style="top: 100%"></div>
+          <div class="depth-marker" style="top: 100%">1000m</div>
+
+          <!-- Cursor -->
+          <div id="depth-cursor">🟡</div> <!-- Simple sub icon -->
+      </div>
+
+      <div id="hp-bar-container" class="ui-element">
+          <div id="hp-bar"></div>
+          <div id="hp-text">100 / 100</div>
+      </div>
+      
+      <div id="score-container" class="ui-element">
+          Score: <span id="score">0</span>
       </div>
       
       <div id="inventory-container" class="ui-element">
@@ -200,7 +286,7 @@
       <!-- Death Screen -->
       <div id="death-screen" class="fullscreen-menu">
           <h1>YOU DIED</h1>
-          <div class="death-stat">Level Reached: <span id="death-level">1</span></div>
+          <div class="death-stat">Max Depth: <span id="death-level">0m</span></div>
           <div class="death-stat">Final Score: <span id="death-score">0</span></div>
           <button id="restart-btn">TRY AGAIN</button>
       </div>

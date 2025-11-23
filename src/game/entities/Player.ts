@@ -41,9 +41,42 @@ export class Player {
     // Shooting Logic
     this.shootCooldown -= dt;
     if (this.shootCooldown <= 0) {
-        this.shootNearestEnemy();
+        // this.shootNearestEnemy();
+        this.shootAtMouse();
         this.shootCooldown = this.attackInterval;
     }
+  }
+
+  shootAtMouse() {
+      // Get mouse position in world coordinates
+      const mouseScreen = this.game.mousePosition;
+      const worldMouseX = mouseScreen.x + this.game.camera.x;
+      const worldMouseY = mouseScreen.y + this.game.camera.y;
+      const worldMouse = new Vector2(worldMouseX, worldMouseY);
+
+      const dir = worldMouse.sub(this.position).normalize();
+      const speed = 400;
+      
+      // Base shot
+      this.fireProjectile(dir, speed);
+
+      // Multi-shot
+      if (this.multiShotLevel > 0) {
+         for (let i = 1; i <= this.multiShotLevel; i++) {
+             const angle = (Math.PI / 12) * i;
+             
+             const cos = Math.cos(angle);
+             const sin = Math.sin(angle);
+             const dir1 = new Vector2(dir.x * cos - dir.y * sin, dir.x * sin + dir.y * cos);
+             
+             const cos2 = Math.cos(-angle);
+             const sin2 = Math.sin(-angle);
+             const dir2 = new Vector2(dir.x * cos2 - dir.y * sin2, dir.x * sin2 + dir.y * cos2);
+
+             this.fireProjectile(dir1, speed);
+             this.fireProjectile(dir2, speed);
+         }
+      }
   }
 
   shootNearestEnemy() {
@@ -99,14 +132,30 @@ export class Player {
     ctx.save();
     ctx.translate(this.position.x, this.position.y);
     
-    // Flip if moving left
-    if (this.game.input.keys['a'] || this.game.input.keys['ArrowLeft']) {
-        ctx.scale(-1, 1);
-    }
+    // Calculate angle to mouse
+    const mouseScreen = this.game.mousePosition;
+    const worldMouseX = mouseScreen.x + this.game.camera.x;
+    const worldMouseY = mouseScreen.y + this.game.camera.y;
+    
+    const dx = worldMouseX - this.position.x;
+    const dy = worldMouseY - this.position.y;
+    const angle = Math.atan2(dy, dx);
+    
+    // Rotate context to face mouse
+    ctx.rotate(angle);
 
     const sprite = SpriteFactory.getSprite('player');
     // Draw centered, scaled up by 2
     const scale = 2;
+    
+    // Since the sprite faces right by default (based on pixel data),
+    // rotating by 'angle' makes it point to the mouse.
+    // However, if it's facing left (angle > PI/2 or < -PI/2), it will be upside down.
+    // To fix upside down rendering when facing left:
+    if (Math.abs(angle) > Math.PI / 2) {
+        ctx.scale(1, -1);
+    }
+
     ctx.drawImage(sprite, -sprite.width * scale / 2, -sprite.height * scale / 2, sprite.width * scale, sprite.height * scale);
 
     ctx.restore();
