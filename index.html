@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Abyss Survivors</title>
+    <style>
+      body { margin: 0; overflow: hidden; background-color: #001e36; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+      canvas { display: block; }
+      #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+      .ui-element { position: absolute; pointer-events: auto; }
+      
+      /* Stats Area */
+      #stats { 
+          top: 20px; left: 20px; 
+          display: flex; 
+          flex-direction: column; 
+          gap: 8px;
+          font-weight: bold;
+          text-shadow: 2px 2px 2px black;
+      }
+      .stat-row { display: flex; align-items: center; gap: 10px; }
+      .stat-label { width: 50px; color: #aaa; }
+      .stat-value { color: #fff; font-size: 18px; }
+
+      /* HP Bar */
+      #hp-bar-container {
+          width: 200px; height: 20px; 
+          background: #333; border: 2px solid #555; 
+          border-radius: 4px; overflow: hidden;
+          position: relative;
+      }
+      #hp-bar { width: 100%; height: 100%; background: #ff4444; transition: width 0.2s; }
+      #hp-text { 
+          position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+          display: flex; align-items: center; justify-content: center; 
+          font-size: 12px; text-shadow: 1px 1px 1px black; 
+      }
+
+      /* XP Bar */
+      #xp-bar-container { bottom: 20px; left: 10%; width: 80%; height: 15px; background: #222; border: 1px solid #444; border-radius: 10px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+      #xp-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #00bcd4, #00ffaa); transition: width 0.2s; }
+
+      /* Inventory */
+      #inventory-container {
+        top: 20px; right: 20px;
+        display: flex;
+        flex-direction: row;
+        gap: 5px;
+      }
+      .inv-item {
+        width: 40px; height: 40px;
+        background: rgba(0,0,0,0.6);
+        border: 1px solid #555;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        box-shadow: 0 0 5px rgba(0,0,0,0.5);
+      }
+      .inv-icon { font-size: 24px; }
+      .inv-rank { 
+          position: absolute; bottom: -4px; right: -4px; 
+          font-size: 11px; background: #000; color: #fff; 
+          padding: 1px 4px; border-radius: 4px; border: 1px solid #333;
+      }
+
+      /* Menus */
+      .fullscreen-menu {
+        display: none;
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        justify-content: center;
+        align-items: center;
+        pointer-events: auto;
+        flex-direction: column;
+        z-index: 100;
+        backdrop-filter: blur(5px);
+      }
+      
+      /* Upgrade Menu */
+      #upgrade-options {
+          display: flex;
+          flex-direction: row;
+          gap: 25px;
+          margin-top: 30px;
+      }
+      .upgrade-card {
+        background: linear-gradient(180deg, #003366 0%, #001e36 100%);
+        border: 2px solid #444;
+        padding: 25px;
+        width: 220px;
+        height: 320px;
+        cursor: pointer;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        transition: all 0.2s;
+        border-radius: 12px;
+        position: relative;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+      }
+      .upgrade-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.6);
+        border-color: #fff;
+      }
+      .upgrade-icon { font-size: 72px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
+      .upgrade-card h3 { margin: 10px 0; font-size: 1.2em; color: #fff; }
+      .upgrade-card p { font-size: 0.9em; color: #ccc; line-height: 1.4; }
+      
+      .rarity-badge {
+          margin-top: auto;
+          padding: 6px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: bold;
+          color: #000;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+      }
+      /* Rarities */
+      .rarity-common { border-color: #4caf50; box-shadow: 0 0 15px rgba(76, 175, 80, 0.3); }
+      .rarity-common .rarity-badge { background: #4caf50; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,0.5); }
+      
+      .rarity-rare { border-color: #9c27b0; box-shadow: 0 0 20px rgba(156, 39, 176, 0.4); }
+      .rarity-rare .rarity-badge { background: #9c27b0; color: white; box-shadow: 0 0 10px #9c27b0; }
+      
+      .rarity-legendary { border-color: #ff9800; box-shadow: 0 0 25px rgba(255, 152, 0, 0.5); }
+      .rarity-legendary .rarity-badge { background: linear-gradient(45deg, #ff9800, #ff5722); color: white; box-shadow: 0 0 15px #ff9800; }
+
+      h1 { font-size: 3em; margin-bottom: 10px; text-shadow: 0 0 20px rgba(0, 188, 212, 0.5); }
+      
+      /* Death Screen */
+      #death-screen h1 { color: #ff4444; text-shadow: 0 0 20px rgba(255, 68, 68, 0.5); }
+      .death-stat { font-size: 1.5em; margin: 10px 0; color: #ccc; }
+      .death-stat span { color: #fff; font-weight: bold; }
+      
+      #restart-btn {
+          margin-top: 30px;
+          padding: 15px 40px;
+          font-size: 24px;
+          background: #00bcd4;
+          color: #000;
+          border: none;
+          border-radius: 50px;
+          cursor: pointer;
+          font-weight: bold;
+          transition: all 0.2s;
+          box-shadow: 0 0 20px rgba(0, 188, 212, 0.4);
+      }
+      #restart-btn:hover {
+          transform: scale(1.1);
+          background: #fff;
+          box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-CgKYOoX8.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CMQHhQVA.css">
+  </head>
+  <body>
+    <div id="ui-layer">
+      <div id="stats" class="ui-element">
+        <div id="hp-bar-container">
+            <div id="hp-bar"></div>
+            <div id="hp-text">100 / 100</div>
+        </div>
+        <div class="stat-row"><span class="stat-label">LVL</span> <span id="level" class="stat-value">1</span></div>
+        <div class="stat-row"><span class="stat-label">SCR</span> <span id="score" class="stat-value">0</span></div>
+      </div>
+      
+      <div id="inventory-container" class="ui-element">
+          <div id="inventory" style="display:flex; gap:5px;">
+             <!-- Inventory Items -->
+          </div>
+      </div>
+
+      <div id="xp-bar-container" class="ui-element">
+        <div id="xp-bar"></div>
+      </div>
+      
+      <!-- Upgrade Menu -->
+      <div id="upgrade-menu" class="fullscreen-menu">
+          <h1>LEVEL UP!</h1>
+          <div id="upgrade-options">
+             <!-- Options injected here -->
+          </div>
+      </div>
+
+      <!-- Death Screen -->
+      <div id="death-screen" class="fullscreen-menu">
+          <h1>YOU DIED</h1>
+          <div class="death-stat">Level Reached: <span id="death-level">1</span></div>
+          <div class="death-stat">Final Score: <span id="death-score">0</span></div>
+          <button id="restart-btn">TRY AGAIN</button>
+      </div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+  </body>
+</html>
