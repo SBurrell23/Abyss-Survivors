@@ -87,7 +87,14 @@
           gap: 25px;
           margin-top: 30px;
       }
+      @keyframes pulse-glow {
+        0% { box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+        50% { box-shadow: 0 0 30px rgba(255,255,255,0.3); }
+        100% { box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+      }
+      
       .upgrade-card {
+        animation: pulse-glow 2s infinite;
         background: linear-gradient(180deg, #003366 0%, #001e36 100%);
         border: 2px solid #444;
         padding: 25px;
@@ -105,9 +112,10 @@
         box-shadow: 0 10px 20px rgba(0,0,0,0.5);
       }
       .upgrade-card:hover {
-        transform: translateY(-10px);
+        transform: translateY(-10px) scale(1.02);
         box-shadow: 0 15px 30px rgba(0,0,0,0.6);
         border-color: #fff;
+        z-index: 10;
       }
       .upgrade-icon { font-size: 72px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
       .upgrade-card h3 { margin: 10px 0; font-size: 1.2em; color: #fff; }
