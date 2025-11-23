@@ -1,0 +1,76 @@
+[
+  {
+    "id": "rapid_fire",
+    "name": "Rapid Fire",
+    "description": "Increases firing speed by 10%",
+    "rarity": "common",
+    "icon": "⚡",
+    "type": "stat",
+    "stat": "attackInterval",
+    "value": 0.9,
+    "op": "multiply"
+  },
+  {
+    "id": "heavy_torpedo",
+    "name": "Heavy Torpedo",
+    "description": "Increases damage by 20%",
+    "rarity": "common",
+    "icon": "💣",
+    "type": "stat",
+    "stat": "damage",
+    "value": 1.2,
+    "op": "multiply"
+  },
+  {
+    "id": "engine_boost",
+    "name": "Engine Boost",
+    "description": "Increases movement speed by 10%",
+    "rarity": "common",
+    "icon": "💨",
+    "type": "stat",
+    "stat": "speed",
+    "value": 1.1,
+    "op": "multiply"
+  },
+  {
+    "id": "reinforced_hull",
+    "name": "Reinforced Hull",
+    "description": "Increases Max HP by 20",
+    "rarity": "common",
+    "icon": "🛡️",
+    "type": "stat",
+    "stat": "maxHp",
+    "value": 20,
+    "op": "add"
+  },
+  {
+    "id": "multi_shot",
+    "name": "Multi-Shot",
+    "description": "Fires an additional projectile",
+    "rarity": "legendary",
+    "icon": "🔱",
+    "type": "special",
+    "effect": "increment_multishot"
+  },
+  {
+    "id": "protection_ring",
+    "name": "Protection Ring",
+    "description": "Summons an orbiting projectile",
+    "rarity": "rare",
+    "icon": "💫",
+    "type": "special",
+    "effect": "increment_protection_ring"
+  },
+  {
+    "id": "magnet",
+    "name": "XP Magnet",
+    "description": "Increases XP pickup range",
+    "rarity": "common",
+    "icon": "🧲",
+    "type": "stat",
+    "stat": "magnetRadius",
+    "value": 1.5,
+    "op": "multiply"
+  }
+]
+
