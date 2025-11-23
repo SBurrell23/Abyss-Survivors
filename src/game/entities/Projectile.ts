@@ -24,6 +24,7 @@ export class Projectile {
   knockbackForce: number = 0;
   freezeDuration: number = 0;
   scatterOnHit: boolean = false;
+  isEnemy: boolean = false; // New flag
   
   timeAlive: number = 0;
   initialVelocity: Vector2; // For helix reference
@@ -38,9 +39,6 @@ export class Projectile {
   update(dt: number) {
     this.timeAlive += dt;
       
-    // Homing Logic (Overrides Helix if active?) 
-    // Let's say Homing takes precedence, or Helix only works if NOT homing?
-    // Helix modifies position relative to a straight line.
     if (this.isHoming) {
         let nearest = null;
         let minDst = 300; // Homing range
@@ -72,24 +70,14 @@ export class Projectile {
 
     if (this.isHelix) {
         // Add sine wave motion perpendicular to velocity
-        // We need to base it on timeAlive
         const waveFreq = 10;
-        const waveAmp = 200; // Amplitude scaling
-        
-        // We need the perpendicular vector to the INITIAL velocity direction to stay consistent
-        // Otherwise if we turn (homing), the wave turns too.
+        const waveAmp = 40; // Reduced from 200
         
         const velocityDir = this.velocity.normalize();
         const perp = new Vector2(-velocityDir.y, velocityDir.x);
         
-        // The visual position oscillates around the "true" trajectory
-        // But we are modifying position directly.
-        // P_t = P_0 + V*t + perp * sin(t)
-        // Since we update incrementally:
-        // dP = V*dt + d(perp*sin)/dt * dt
-        // d(sin(wt))/dt = w*cos(wt)
-        
-        const oscVelocity = waveFreq * waveAmp * Math.cos(this.timeAlive * waveFreq);
+        // Use SIN instead of COS so it starts at 0 lateral velocity (straight)
+        const oscVelocity = waveFreq * waveAmp * Math.sin(this.timeAlive * waveFreq);
         
         this.position.x += this.velocity.x * dt + perp.x * oscVelocity * dt;
         this.position.y += this.velocity.y * dt + perp.y * oscVelocity * dt;
@@ -102,7 +90,6 @@ export class Projectile {
     this.duration -= dt;
     if (this.duration <= 0) {
         this.active = false;
-        // Scatter on death? maybe only on hit.
     }
   }
 
@@ -128,8 +115,7 @@ export class Projectile {
       // Scatter
       if (this.scatterOnHit) {
           this.scatter();
-          this.scatterOnHit = false; // Don't scatter recursively infinite? 
-          // Or just make sure scattered projectiles don't have scatterOnHit = true.
+          this.scatterOnHit = false; 
       }
       
       // Pierce Logic
@@ -148,7 +134,7 @@ export class Projectile {
           const speed = this.velocity.length() * 0.8;
           
           const currentAngle = Math.atan2(this.velocity.y, this.velocity.x);
-          const newAngle = currentAngle + angle + (Math.random() - 0.5) * 0.5; // Some random
+          const newAngle = currentAngle + angle + (Math.random() - 0.5) * 0.5; 
           
           const vel = new Vector2(Math.cos(newAngle) * speed, Math.sin(newAngle) * speed);
           
@@ -156,9 +142,7 @@ export class Projectile {
           p.damage = this.damage * 0.5;
           p.duration = 1.0;
           p.radius = this.radius * 0.6;
-          // Don't inherit scatter to prevent infinite loop
           p.scatterOnHit = false; 
-          // Inherit others?
           p.knockbackForce = this.knockbackForce * 0.5;
           p.freezeDuration = this.freezeDuration;
           
@@ -192,7 +176,7 @@ export class Projectile {
     }
     
     if (this.isGiant) {
-        scale = 6; // MASSIVE
+        scale = 6; 
         ctx.shadowColor = 'orange';
         ctx.shadowBlur = 20;
     }

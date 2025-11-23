@@ -8,6 +8,7 @@ export class DepthCharge {
     radius: number = 20;
     damage: number = 100;
     active: boolean = true;
+    fuseTimer: number = 0;
     
     constructor(game: Game, x: number, y: number) {
         this.game = game;
@@ -17,6 +18,7 @@ export class DepthCharge {
     
     update(dt: number) {
         this.position.y += this.velocity.y * dt;
+        this.fuseTimer += dt;
         
         // Despawn if too far
         if (this.position.y > this.game.camera.y + this.game.canvas.height + 100) {
@@ -29,15 +31,33 @@ export class DepthCharge {
         ctx.save();
         ctx.translate(this.position.x, this.position.y);
         
-        ctx.fillStyle = '#222';
+        // Bomb body
+        ctx.fillStyle = '#111';
         ctx.beginPath();
-        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.arc(0, 5, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlight
+        ctx.fillStyle = '#444';
+        ctx.beginPath();
+        ctx.arc(-5, 0, this.radius/3, 0, Math.PI * 2);
         ctx.fill();
         
-        ctx.fillStyle = '#ff0000'; // Red light
+        // Fuse stem
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.arc(5, -5, 5, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(0, -this.radius + 5);
+        ctx.lineTo(0, -this.radius - 5);
+        ctx.stroke();
+
+        // Fuse spark
+        if (Math.floor(this.fuseTimer * 10) % 2 === 0) {
+             ctx.fillStyle = '#ffaa00';
+             ctx.beginPath();
+             ctx.arc(0, -this.radius - 5, 3, 0, Math.PI * 2);
+             ctx.fill();
+        }
         
         ctx.restore();
     }

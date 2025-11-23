@@ -32,7 +32,7 @@ export class UpgradeManager {
     this.upgrades = upgradesData as unknown as UpgradeDef[];
   }
 
-  getRandomUpgrades(count: number = 3): UpgradeDef[] {
+  getRandomUpgrades(count: number = 4): UpgradeDef[] {
     const result: UpgradeDef[] = [];
     
     while (result.length < count) {

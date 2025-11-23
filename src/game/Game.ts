@@ -4,6 +4,9 @@ import { OrbitProjectile } from './entities/OrbitProjectile';
 import { Projectile } from './entities/Projectile';
 import { XPOrb } from './entities/XPOrb';
 import { DepthCharge } from './entities/NewEntities';
+import { Explosion } from './entities/Explosion';
+import { TreasureChest } from './entities/TreasureChest';
+import { Kraken } from './entities/Kraken';
 import { Vector2 } from './utils';
 import { UpgradeManager } from './UpgradeManager';
 import monstersData from './data/monsters.json';
@@ -32,8 +35,22 @@ export class Game {
   
   // New Entities Lists
   depthCharges: DepthCharge[] = [];
+  explosions: Explosion[] = [];
+  treasureChests: TreasureChest[] = [];
+  kraken: Kraken | null = null;
   
   upgradeManager: UpgradeManager;
+  
+  // Game State
+  isMinigameActive: boolean = false;
+  minigameCursor: number = 0; // 0 to 1
+  minigameDirection: number = 1; 
+  minigameShowingReward: boolean = false;
+  
+  // Map Logic
+  trenchX: number | null = null;
+  isBossFight: boolean = false;
+  bossFightTimer: number = 0;
   
   score: number = 0;
   depth: number = 0; 
@@ -62,6 +79,13 @@ export class Game {
     this.resize();
     window.addEventListener('resize', () => this.resize());
     this.setupInput();
+    
+    // Minigame input
+    window.addEventListener('keydown', (e) => {
+        if (this.isMinigameActive && e.code === 'Space') {
+            this.stopMinigame();
+        }
+    });
 
     this.setupRestart();
     this.initParticleDefs();
@@ -85,7 +109,7 @@ export class Game {
           });
       }
       
-      // TODO: Add visual effect entity
+      this.explosions.push(new Explosion(this, pos.x, pos.y, radius));
   }
   
   initParticleDefs() {
@@ -151,6 +175,16 @@ export class Game {
       // Draw deep earth
       ctx.fillStyle = '#1a100e'; 
       ctx.fillRect(this.camera.x, floorY + 50, this.canvas.width, 2000); 
+
+      // Trench Graphic
+      if (this.trenchX !== null) {
+           const trenchWidth = 500;
+           const trenchLeft = this.trenchX - trenchWidth/2;
+           
+           // Draw a dark hole
+           ctx.fillStyle = '#000010'; // Almost black blue
+           ctx.fillRect(trenchLeft, floorY, trenchWidth, 2000);
+      }
 
       // Draw Sand Layer (base)
       ctx.fillStyle = floorColor;
@@ -264,6 +298,45 @@ export class Game {
   }
 
   update(dt: number) {
+    // Minigame Logic
+    if (this.isMinigameActive) {
+        if (this.minigameShowingReward) return; // Pause everything
+
+        this.minigameCursor += this.minigameDirection * dt * 1.5; // Speed Reduced
+        if (this.minigameCursor >= 1) {
+            this.minigameCursor = 1;
+            this.minigameDirection = -1;
+        } else if (this.minigameCursor <= 0) {
+            this.minigameCursor = 0;
+            this.minigameDirection = 1;
+        }
+        
+        const cursorEl = document.getElementById('gauge-cursor');
+        if (cursorEl) cursorEl.style.left = `${this.minigameCursor * 100}%`;
+        return; // Pause other updates
+    }
+    
+    if (this.isBossFight && this.kraken) {
+        this.kraken.update(dt);
+        this.player.update(dt);
+        
+        // Keep player in bounds for boss fight
+        // ...
+        
+        // Update Projectiles
+        this.projectiles.forEach(p => p.update(dt));
+        this.projectiles = this.projectiles.filter(p => p.active);
+        
+        // Collisions
+        this.checkCollisions();
+        this.updateUI();
+        
+        // Boss Fight Timer
+        this.bossFightTimer += dt;
+        
+        return;
+    }
+
     // Sea Floor Logic
     const MAX_DEPTH_METERS = 1000;
     const PIXELS_PER_METER = 25;
@@ -280,6 +353,25 @@ export class Game {
 
     // Calculate depth
     this.depth = Math.max(0, Math.floor(this.player.position.y / PIXELS_PER_METER));
+    
+    // Trench Logic
+    if (this.depth >= 950 && this.trenchX === null) {
+        // Spawn trench nearby
+        const direction = Math.random() > 0.5 ? 1 : -1;
+        this.trenchX = this.player.position.x + direction * 250 * PIXELS_PER_METER / 25; // 250m converted? 
+        // Wait, 250m is distance. PIXELS_PER_METER = 25.
+        // 250m * 25 = 6250 pixels.
+        this.trenchX = this.player.position.x + direction * 6250;
+    }
+    
+    // Check for trench entry
+    if (this.trenchX !== null) {
+        const dist = Math.abs(this.player.position.x - this.trenchX);
+        // Trench is approx 500px wide
+        if (dist < 250 && this.depth >= 980) {
+            this.enterBossFight();
+        }
+    }
 
     this.player.update(dt);
     // Particles are now stateless/time-based, no update needed
@@ -313,9 +405,24 @@ export class Game {
     this.depthCharges.forEach(d => d.update(dt));
     this.depthCharges = this.depthCharges.filter(d => d.active);
 
+    // Update Explosions
+    this.explosions.forEach(e => e.update(dt));
+    this.explosions = this.explosions.filter(e => e.active);
+
     // Update XP Orbs
     this.xpOrbs.forEach(o => o.update(dt));
     this.xpOrbs = this.xpOrbs.filter(o => o.active);
+    
+    // Update Treasure Chests
+    this.treasureChests.forEach(c => {
+        // Simple logic if needed
+        if (c) return; // keep compiler happy
+    });
+    
+    // Spawn Treasure Chests
+    if (Math.random() < 0.001) { // Rare spawn
+        this.spawnTreasure();
+    }
 
     // Spawner logic
     // Spawn rate increases with depth
@@ -327,6 +434,15 @@ export class Game {
 
     // Check Collisions
     this.checkCollisions();
+    
+    // Treasure Chest Collision
+    for (const chest of this.treasureChests) {
+        if (chest.active && chest.position.distanceTo(this.player.position) < chest.radius + this.player.radius) {
+            chest.active = false;
+            this.startMinigame();
+        }
+    }
+    this.treasureChests = this.treasureChests.filter(c => c.active);
 
     // Update UI
     this.updateUI();
@@ -407,7 +523,129 @@ export class Game {
      // Scavenger Protocol Drop? (Only on kill, moved to checkCollisions or Enemy)
   }
 
+  spawnTreasure() {
+      // Spawn off-screen
+      const side = Math.random() > 0.5 ? 1 : -1;
+      const x = this.player.position.x + side * (this.canvas.width / 2 + 200 + Math.random() * 500);
+      const y = this.player.position.y + (Math.random() - 0.5) * 600;
+      
+      this.treasureChests.push(new TreasureChest(this, x, y));
+  }
+
+  startMinigame() {
+      this.isMinigameActive = true;
+      this.minigameShowingReward = false;
+      const layer = document.getElementById('minigame-layer');
+      const rewardEl = document.getElementById('minigame-reward');
+      if (layer) layer.style.display = 'flex';
+      if (rewardEl) rewardEl.style.display = 'none';
+      this.minigameCursor = 0;
+  }
+  
+  stopMinigame() {
+      if (this.minigameShowingReward) return;
+      this.minigameShowingReward = true;
+      
+      // Calculate Reward
+      let rarity = 'common';
+      // Zones: Rare 42.5-57.5? No, CSS says: Rare width 15% at 42.5%, Legendary width 5% at 47.5%
+      // Rare: 0.425 to 0.575
+      // Legendary: 0.475 to 0.525 (Inside Rare)
+      
+      if (this.minigameCursor >= 0.425 && this.minigameCursor <= 0.575) rarity = 'rare';
+      if (this.minigameCursor >= 0.475 && this.minigameCursor <= 0.525) rarity = 'legendary';
+      
+      const upgrades = this.upgradeManager.upgrades.filter(u => u.rarity === rarity);
+      const pick = upgrades[Math.floor(Math.random() * upgrades.length)];
+      
+      if (pick) {
+          this.upgradeManager.applyUpgrade(pick);
+          
+          // Show UI
+          const rewardEl = document.getElementById('minigame-reward');
+          const contentEl = document.getElementById('reward-content');
+          if (rewardEl && contentEl) {
+              rewardEl.style.display = 'block';
+              contentEl.innerHTML = `
+                  <div class="upgrade-icon" style="font-size: 48px;">${pick.icon}</div>
+                  <h3 style="margin:0; color: ${rarity === 'legendary' ? '#ff9800' : rarity === 'rare' ? '#9c27b0' : '#4caf50'}">${pick.name}</h3>
+                  <p style="margin:0; color:#ccc;">${pick.description}</p>
+              `;
+          }
+      }
+      
+      setTimeout(() => {
+          const layer = document.getElementById('minigame-layer');
+          if (layer) layer.style.display = 'none';
+          this.isMinigameActive = false;
+          this.minigameShowingReward = false;
+      }, 2000);
+  }
+
+  enterBossFight() {
+      this.isBossFight = true;
+      this.enemies = [];
+      this.projectiles = [];
+      this.depthCharges = [];
+      
+      // Teleport
+      this.player.position.y += 2000; // Deep ocean
+      this.kraken = new Kraken(this, this.player.position.x, this.player.position.y + 500);
+      
+      // UI Updates
+      const depthMeter = document.getElementById('depth-meter-container');
+      if (depthMeter) depthMeter.style.display = 'none';
+  }
+  
+  winGame() {
+      this.isGameOver = true;
+      // Show Victory Screen
+      const deathScreen = document.getElementById('death-screen');
+      if (deathScreen) {
+          deathScreen.style.display = 'flex';
+          const h1 = deathScreen.querySelector('h1');
+          if (h1) h1.innerText = "YOU CONQUERED THE ABYSS!";
+          
+          // Add stats
+          const stats = document.createElement('div');
+          stats.innerHTML = `
+            <p>Time: ${Math.floor(this.lastTime / 1000)}s</p>
+            <p>Boss Fight: ${Math.floor(this.bossFightTimer)}s</p>
+          `;
+          deathScreen.insertBefore(stats, document.getElementById('restart-btn'));
+      }
+  }
+
   checkCollisions() {
+      if (this.isBossFight && this.kraken) {
+          // Player Projectiles vs Kraken
+          for (const proj of this.projectiles) {
+              if (!proj.isEnemy && proj.position.distanceTo(this.kraken.position) < proj.radius + this.kraken.radius) {
+                   this.kraken.takeDamage(proj.damage);
+                   proj.onHit(this.kraken); // Might need to adjust onHit to accept Kraken
+              }
+              // Kraken Projectiles vs Player
+              if (proj.isEnemy && proj.position.distanceTo(this.player.position) < proj.radius + this.player.radius) {
+                  this.player.takeDamage(proj.damage);
+                  proj.active = false;
+              }
+          }
+          // Minions collision
+          for (const enemy of this.enemies) {
+             if (enemy.position.distanceTo(this.player.position) < (enemy.radius + this.player.radius)) {
+                 this.player.takeDamage(10 * 0.016); 
+             }
+             // Projectiles vs Minions
+             for (const proj of this.projectiles) {
+                 if (!proj.isEnemy && proj.position.distanceTo(enemy.position) < proj.radius + enemy.radius) {
+                     enemy.takeDamage(proj.damage);
+                     proj.onHit(enemy);
+                 }
+             }
+          }
+          return;
+      }
+
       // Player vs Enemies
       for (const enemy of this.enemies) {
           if (enemy.position.distanceTo(this.player.position) < (enemy.radius + this.player.radius)) {
@@ -510,7 +748,7 @@ export class Game {
       menu.style.display = 'flex';
       optionsContainer.innerHTML = '';
 
-      const options = this.upgradeManager.getRandomUpgrades(3);
+      const options = this.upgradeManager.getRandomUpgrades(4);
 
       options.forEach(opt => {
           const el = document.createElement('div');
@@ -561,9 +799,17 @@ export class Game {
       const hpBar = document.getElementById('hp-bar');
       const hpText = document.getElementById('hp-text');
       if (hpBar && hpText) {
-          const pct = (this.player.hp / this.player.maxHp) * 100;
-          hpBar.style.width = `${Math.max(0, pct)}%`;
-          hpText.innerText = `${Math.ceil(this.player.hp)} / ${this.player.maxHp}`;
+          if (this.isBossFight && this.kraken) {
+              const pct = (this.kraken.hp / this.kraken.maxHp) * 100;
+              hpBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+              hpText.innerText = `KRAKEN: ${Math.ceil(this.kraken.hp)} / ${this.kraken.maxHp}`;
+              hpBar.style.backgroundColor = '#9c27b0'; // Purple
+          } else {
+              const pct = (this.player.hp / this.player.maxHp) * 100;
+              hpBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+              hpText.innerText = `${Math.ceil(this.player.hp)} / ${this.player.maxHp}`;
+              hpBar.style.backgroundColor = '#ff4444'; // Reset color
+          }
       }
 
       const xpBar = document.getElementById('xp-bar');
@@ -667,9 +913,12 @@ export class Game {
     }
 
     // Draw Game Entities
+    this.treasureChests.forEach(c => c.draw(this.ctx));
     this.xpOrbs.forEach(o => o.draw(this.ctx));
     this.depthCharges.forEach(d => d.draw(this.ctx));
+    this.explosions.forEach(e => e.draw(this.ctx));
     this.enemies.forEach(e => e.draw(this.ctx));
+    if (this.kraken && this.isBossFight) this.kraken.draw(this.ctx);
     this.projectiles.forEach(p => p.draw(this.ctx));
     this.player.draw(this.ctx);
     
@@ -677,6 +926,25 @@ export class Game {
     this.drawSeaFloor(this.ctx);
 
     this.ctx.restore();
+    
+    // UI Overlay Messages
+    if (this.depth > 900 && !this.isBossFight) {
+        this.ctx.save();
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = 'bold 30px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.shadowColor = 'black';
+        this.ctx.shadowBlur = 5;
+        this.ctx.fillText("Search the seabed! Find the abyssal trench!", this.canvas.width/2, this.canvas.height - 100);
+        
+        if (this.trenchX !== null) {
+             const dist = Math.abs(this.player.position.x - this.trenchX);
+             if (dist > 7500) { // 300m * 25 = 7500
+                 this.ctx.fillText("The water goes no deeper this way!", this.canvas.width/2, this.canvas.height - 60);
+             }
+        }
+        this.ctx.restore();
+    }
   }
 
   drawBackgroundGrid() {

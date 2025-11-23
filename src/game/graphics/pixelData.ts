@@ -210,6 +210,26 @@ export const spriteDefinitions: Record<string, SpriteDef> = {
             "........"
         ]
     },
+    treasure_chest: {
+        size: [16, 14],
+        palette: { '.': 'transparent', 'G': '#FFD700', 'B': '#8B4513', 'L': '#000000' },
+        data: [
+            "....GGGGGGGG....",
+            "..GGBBBBBBBBGG..",
+            ".GBBBBBBBBBBBBG.",
+            "GBBBBBBBBBBBBBBG",
+            "GBBBBBBBLLBBBBBG",
+            "GBBBBBBBLLBBBBBG",
+            "GGGGGGGGGGGGGGGG",
+            "GBBBBBBBLLBBBBBG",
+            "GBBBBBBBLLBBBBBG",
+            "GBBBBBBBBBBBBBBG",
+            "GBBBBBBBBBBBBBBG",
+            ".GBBBBBBBBBBBBG.",
+            "..GGBBBBBBBBGG..",
+            "....GGGGGGGG...."
+        ]
+    },
     xp_orb: {
         size: [8, 8],
         palette: { '.': 'transparent', 'G': '#00FF00', 'L': '#CCFFCC' },

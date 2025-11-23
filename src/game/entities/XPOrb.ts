@@ -13,6 +13,12 @@ export class XPOrb {
     this.game = game;
     this.position = new Vector2(x, y);
     this.value = value;
+    
+    // Scale size based on value, max 3x
+    // Base value is approx 10?
+    const baseRadius = 5;
+    const scale = Math.min(3, 1 + (value - 10) / 100); 
+    this.radius = baseRadius * scale;
   }
   
   // Might add magnet effect update here
@@ -27,7 +33,7 @@ export class XPOrb {
 
   draw(ctx: CanvasRenderingContext2D) {
       const sprite = SpriteFactory.getSprite('xp_orb');
-      const scale = 1.5;
+      const scale = (this.radius / 5) * 1.5; // Adjust sprite scale to match radius
       
       // Simple bobbing animation
       const offset = Math.sin(Date.now() / 200) * 2;

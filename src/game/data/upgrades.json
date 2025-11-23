@@ -54,8 +54,8 @@
   },
   {
     "id": "protection_ring",
-    "name": "Protection Ring",
-    "description": "Summons an orbiting projectile",
+    "name": "Circling Torpedoes",
+    "description": "Spawns torpedoes that circle around you",
     "rarity": "rare",
     "icon": "💫",
     "type": "special",

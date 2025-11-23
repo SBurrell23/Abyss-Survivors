@@ -166,7 +166,11 @@ export class Player {
 
   fireProjectile(dir: Vector2, speed: number, isGiant: boolean = false) {
       const velocity = dir.scale(speed);
-      const projectile = new Projectile(this.game, this.position.x, this.position.y, velocity);
+      // Spawn from front of player (approximate based on radius)
+      const spawnOffset = dir.scale(this.radius * 1.5);
+      const spawnPos = this.position.add(spawnOffset);
+      
+      const projectile = new Projectile(this.game, spawnPos.x, spawnPos.y, velocity);
       
       // Apply stats
       let finalDamage = this.damage;
