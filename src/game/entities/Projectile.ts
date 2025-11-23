@@ -72,34 +72,27 @@ export class Projectile {
 
     if (this.isHelix) {
         // Add sine wave motion perpendicular to velocity
+        // We need to base it on timeAlive
         const waveFreq = 10;
-        const waveAmp = 1500; // Needs to be high cause we adding to velocity or position?
-        // If we modify position directly, we drift.
-        // Better to add to velocity perpendicular.
-        // Or: base position = P0 + V*t. 
-        // Actual position = base + perp * sin(t).
-        // But we are stateless update.
-        // Let's just add a perpendicular vector to movement this frame.
+        const waveAmp = 200; // Amplitude scaling
         
-        const perp = new Vector2(-this.velocity.y, this.velocity.x).normalize();
-        const wave = Math.cos(this.timeAlive * waveFreq) * waveAmp; // Derivative of sin is cos for velocity?
-        // Actually simpler:
-        // Just add perp * cos(t) * amp to position change
+        // We need the perpendicular vector to the INITIAL velocity direction to stay consistent
+        // Otherwise if we turn (homing), the wave turns too.
         
-        // Wait, we modify the visual position or the logical? 
-        // Logical position for collision.
+        const velocityDir = this.velocity.normalize();
+        const perp = new Vector2(-velocityDir.y, velocityDir.x);
         
-        const osc = Math.cos(this.timeAlive * 10) * 200; // Oscillating speed
+        // The visual position oscillates around the "true" trajectory
+        // But we are modifying position directly.
+        // P_t = P_0 + V*t + perp * sin(t)
+        // Since we update incrementally:
+        // dP = V*dt + d(perp*sin)/dt * dt
+        // d(sin(wt))/dt = w*cos(wt)
         
-        // We want strictly deviation from straight line.
-        // Let's keep it simple: add perpendicular velocity component
-        // But velocity vector determines direction.
+        const oscVelocity = waveFreq * waveAmp * Math.cos(this.timeAlive * waveFreq);
         
-        this.position.x += this.velocity.x * dt;
-        this.position.y += this.velocity.y * dt;
-        
-        this.position.x += perp.x * osc * dt;
-        this.position.y += perp.y * osc * dt;
+        this.position.x += this.velocity.x * dt + perp.x * oscVelocity * dt;
+        this.position.y += this.velocity.y * dt + perp.y * oscVelocity * dt;
         
     } else {
         this.position.x += this.velocity.x * dt;
