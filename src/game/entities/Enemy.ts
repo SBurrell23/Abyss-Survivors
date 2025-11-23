@@ -1,6 +1,7 @@
 import { Game } from '../Game';
 import { Vector2 } from '../utils';
 import { XPOrb } from './XPOrb';
+import { SpriteFactory } from '../graphics/SpriteFactory';
 
 export interface MonsterStats {
   id: string;
@@ -76,66 +77,56 @@ export class Enemy {
     ctx.save();
     ctx.translate(this.position.x, this.position.y);
     
-    ctx.fillStyle = this.stats.color;
-    
     // Rotation based on movement direction (facing player)
     const dir = this.game.player.position.sub(this.position);
+    
+    // Flip sprite based on direction
+    if (dir.x < 0) ctx.scale(1, -1); // Upside down if rotated? No.
+    // Standard rotation is easier for top-down
     const angle = Math.atan2(dir.y, dir.x);
     ctx.rotate(angle);
 
-    this.drawShape(ctx);
+    // Map stats.id or behavior to sprite
+    let spriteName = 'enemy_fish';
+    let paletteOverride = undefined;
+
+    if (this.stats.id.includes('crab')) spriteName = 'enemy_crab';
+    else if (this.stats.id.includes('squid')) spriteName = 'enemy_squid';
+    else if (this.stats.id.includes('shark')) spriteName = 'enemy_shark';
+    else if (this.stats.id.includes('ray')) spriteName = 'enemy_ray';
+    else if (this.stats.id.includes('turtle')) spriteName = 'enemy_turtle';
+    else if (this.stats.id.includes('horror')) spriteName = 'enemy_horror';
+    
+    // Tint based on stats.color
+    // We can override the main color in the palette
+    // Most sprites use 'R' or 'O' or 'P' or 'G' or 'B' as main body
+    paletteOverride = { 
+        'R': this.stats.color, 
+        'O': this.stats.color, 
+        'P': this.stats.color,
+        // 'G': this.stats.color, // Sharks use G, but we might want to keep them grey? Or tint them slightly?
+        // 'B': this.stats.color // Rays use B
+    };
+    
+    // If unique sprite exists, use its native colors unless overridden explicitly
+    // For fish/crabs, we want tinting. For detailed sprites like shark, maybe keep original?
+    // Let's only apply tint to generic ones or small ones.
+    if (['enemy_shark', 'enemy_ray', 'enemy_turtle', 'enemy_horror'].includes(spriteName)) {
+        paletteOverride = undefined; // Use defined palette
+    }
+
+    const sprite = SpriteFactory.getSprite(spriteName, paletteOverride);
+    // Adjust scale based on sprite native size vs target radius
+    // Sprite is drawn centered. 
+    // Target diameter = radius * 2. 
+    // We want sprite to cover roughly the diameter.
+    // sprite.width * scale = radius * 2
+    // scale = (radius * 2) / sprite.width
+    const scale = (this.stats.radius * 2.5) / Math.max(sprite.width, sprite.height); 
+
+    ctx.drawImage(sprite, -sprite.width * scale / 2, -sprite.height * scale / 2, sprite.width * scale, sprite.height * scale);
 
     ctx.restore();
-  }
-
-  drawShape(ctx: CanvasRenderingContext2D) {
-      const r = this.stats.radius;
-      
-      ctx.beginPath();
-      
-      if (this.stats.id === 'crab') {
-          ctx.ellipse(0, 0, r, r*0.8, 0, 0, Math.PI*2);
-          ctx.fill();
-          // Claws
-          ctx.beginPath(); ctx.arc(r, -r/2, r/2, 0, Math.PI*2); ctx.fill();
-          ctx.beginPath(); ctx.arc(r, r/2, r/2, 0, Math.PI*2); ctx.fill();
-      } else if (this.stats.id === 'shark' || this.stats.id === 'fish_medium') {
-          // Triangle-ish fish
-          ctx.moveTo(r, 0);
-          ctx.lineTo(-r, r);
-          ctx.lineTo(-r, -r);
-          ctx.fill();
-          // Tail
-          ctx.beginPath();
-          ctx.moveTo(-r, 0);
-          ctx.lineTo(-r - 5, 5);
-          ctx.lineTo(-r - 5, -5);
-          ctx.fill();
-      } else if (this.stats.id === 'ray') {
-          // Diamond/Kite
-          ctx.moveTo(r, 0);
-          ctx.lineTo(0, r);
-          ctx.lineTo(-r, 0);
-          ctx.lineTo(0, -r);
-          ctx.fill();
-      } else if (this.stats.id === 'squid') {
-          // Elongated
-          ctx.ellipse(0, 0, r, r/2, 0, 0, Math.PI*2);
-          ctx.fill();
-          // Tentacles trailing
-          ctx.strokeStyle = this.stats.color;
-          ctx.lineWidth = 2;
-          for(let i=-2; i<=2; i++) {
-              ctx.beginPath();
-              ctx.moveTo(0, i*4);
-              ctx.lineTo(-r*1.5, i*4 + Math.sin(this.animTime*10 + i)*5);
-              ctx.stroke();
-          }
-      } else {
-          // Default Circle/Blob
-          ctx.arc(0, 0, r, 0, Math.PI * 2);
-          ctx.fill();
-      }
   }
 
   takeDamage(amount: number) {

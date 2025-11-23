@@ -1,5 +1,6 @@
 import { Game } from '../Game';
 import { Vector2 } from '../utils';
+import { SpriteFactory } from '../graphics/SpriteFactory';
 
 export class Projectile {
   game: Game;
@@ -34,10 +35,13 @@ export class Projectile {
     ctx.save();
     ctx.translate(this.position.x, this.position.y);
     
-    ctx.fillStyle = '#00ffff';
-    ctx.beginPath();
-    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-    ctx.fill();
+    const velocity = this.velocity;
+    const angle = Math.atan2(velocity.y, velocity.x);
+    ctx.rotate(angle);
+
+    const sprite = SpriteFactory.getSprite('projectile_torpedo');
+    const scale = 2;
+    ctx.drawImage(sprite, -sprite.width * scale / 2, -sprite.height * scale / 2, sprite.width * scale, sprite.height * scale);
 
     ctx.restore();
   }

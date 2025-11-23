@@ -1,6 +1,7 @@
 import { Vector2 } from '../utils';
 import { Game } from '../Game';
 import { Projectile } from './Projectile';
+import { SpriteFactory } from '../graphics/SpriteFactory';
 
 export class Player {
   position: Vector2;
@@ -98,16 +99,15 @@ export class Player {
     ctx.save();
     ctx.translate(this.position.x, this.position.y);
     
-    // Draw Submarine
-    ctx.fillStyle = '#FFD700'; // Yellow submarine
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 20, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Periscope
-    ctx.fillStyle = '#A9A9A9';
-    ctx.fillRect(-5, -15, 4, 10);
-    ctx.fillRect(-5, -17, 10, 4);
+    // Flip if moving left
+    if (this.game.input.keys['a'] || this.game.input.keys['ArrowLeft']) {
+        ctx.scale(-1, 1);
+    }
+
+    const sprite = SpriteFactory.getSprite('player');
+    // Draw centered, scaled up by 2
+    const scale = 2;
+    ctx.drawImage(sprite, -sprite.width * scale / 2, -sprite.height * scale / 2, sprite.width * scale, sprite.height * scale);
 
     ctx.restore();
   }

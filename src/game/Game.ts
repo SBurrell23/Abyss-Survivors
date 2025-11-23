@@ -6,6 +6,7 @@ import { XPOrb } from './entities/XPOrb';
 import { Vector2 } from './utils';
 import { UpgradeManager } from './UpgradeManager';
 import monstersData from './data/monsters.json';
+import { SpriteFactory } from './graphics/SpriteFactory';
 
 export class Game {
   canvas: HTMLCanvasElement;
@@ -33,6 +34,7 @@ export class Game {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
+    this.ctx.imageSmoothingEnabled = false; // Important for pixel art
     this.resize();
     window.addEventListener('resize', () => this.resize());
     this.setupInput();
@@ -55,6 +57,7 @@ export class Game {
   resize() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
+    this.ctx.imageSmoothingEnabled = false; // Reset on resize sometimes
   }
 
   setupInput() {
@@ -296,23 +299,32 @@ export class Game {
   }
 
   drawBackgroundGrid() {
-      const gridSize = 100;
-      const startX = Math.floor(this.camera.x / gridSize) * gridSize;
-      const startY = Math.floor(this.camera.y / gridSize) * gridSize;
+      const gridSize = 128; // Tile size (32 * 4 scale)
       
-      this.ctx.strokeStyle = '#003366';
-      this.ctx.lineWidth = 1;
-      this.ctx.beginPath();
+      // Create pattern if not exists
+      if (!this.bgPattern) {
+          this.bgPattern = SpriteFactory.createPattern('background_tile');
+      }
+      
+      if (this.bgPattern) {
+         this.ctx.save();
+         // FillRect in world coordinates
+         this.ctx.fillStyle = this.bgPattern;
 
-      for (let x = startX; x < this.camera.x + this.canvas.width + gridSize; x += gridSize) {
-          this.ctx.moveTo(x, this.camera.y);
-          this.ctx.lineTo(x, this.camera.y + this.canvas.height);
+         const viewL = this.camera.x;
+         const viewT = this.camera.y;
+         
+         // Draw a bit extra to cover edges
+         this.ctx.fillRect(viewL - gridSize, viewT - gridSize, this.canvas.width + gridSize * 2, this.canvas.height + gridSize * 2);
+         
+         this.ctx.restore();
+      } else {
+        // Fallback
+        this.ctx.strokeStyle = '#003366';
+        // ... old grid code
       }
-      for (let y = startY; y < this.camera.y + this.canvas.height + gridSize; y += gridSize) {
-          this.ctx.moveTo(this.camera.x, y);
-          this.ctx.lineTo(this.camera.x + this.canvas.width, y);
-      }
-      this.ctx.stroke();
   }
+  
+  bgPattern: CanvasPattern | null = null;
 }
 

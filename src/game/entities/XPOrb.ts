@@ -1,5 +1,6 @@
 import { Game } from '../Game';
 import { Vector2 } from '../utils';
+import { SpriteFactory } from '../graphics/SpriteFactory';
 
 export class XPOrb {
   game: Game;
@@ -25,10 +26,18 @@ export class XPOrb {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-      ctx.fillStyle = '#00ff00';
-      ctx.beginPath();
-      ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
-      ctx.fill();
+      const sprite = SpriteFactory.getSprite('xp_orb');
+      const scale = 1.5;
+      
+      // Simple bobbing animation
+      const offset = Math.sin(Date.now() / 200) * 2;
+      
+      ctx.drawImage(sprite, 
+          this.position.x - sprite.width * scale / 2, 
+          this.position.y - sprite.height * scale / 2 + offset, 
+          sprite.width * scale, 
+          sprite.height * scale
+      );
   }
 }
 
