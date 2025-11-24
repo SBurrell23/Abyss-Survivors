@@ -5,7 +5,7 @@ export class DepthCharge {
     game: Game;
     position: Vector2;
     velocity: Vector2;
-    radius: number = 20;
+    radius: number = 12; // Reduced from 20 to make bombs smaller
     damage: number = 100;
     active: boolean = true;
     fuseTimer: number = 0;

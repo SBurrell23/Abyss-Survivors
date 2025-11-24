@@ -36,7 +36,8 @@ export class Explosion {
         if (!this.active) return;
         
         ctx.save();
-        ctx.globalAlpha = 1 - (this.timeAlive / this.duration);
+        // Make explosions more transparent - max opacity 0.5 instead of 1.0
+        ctx.globalAlpha = (1 - (this.timeAlive / this.duration)) * 0.5;
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);

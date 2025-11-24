@@ -8,7 +8,8 @@
     "type": "stat",
     "stat": "attackInterval",
     "value": 0.9,
-    "op": "multiply"
+    "op": "multiply",
+    "maxRank": 12
   },
   {
     "id": "heavy_torpedo",
@@ -19,7 +20,8 @@
     "type": "stat",
     "stat": "damage",
     "value": 1.2,
-    "op": "multiply"
+    "op": "multiply",
+    "maxRank": 12
   },
   {
     "id": "engine_boost",
@@ -30,7 +32,8 @@
     "type": "stat",
     "stat": "speed",
     "value": 1.1,
-    "op": "multiply"
+    "op": "multiply",
+    "maxRank": 10
   },
   {
     "id": "reinforced_hull",
@@ -41,7 +44,8 @@
     "type": "stat",
     "stat": "maxHp",
     "value": 20,
-    "op": "add"
+    "op": "add",
+    "maxRank": 10
   },
   {
     "id": "multi_shot",
@@ -50,7 +54,8 @@
     "rarity": "legendary",
     "icon": "🔱",
     "type": "special",
-    "effect": "increment_multishot"
+    "effect": "increment_multishot",
+    "maxRank": 8
   },
   {
     "id": "protection_ring",
@@ -59,7 +64,8 @@
     "rarity": "rare",
     "icon": "💫",
     "type": "special",
-    "effect": "increment_protection_ring"
+    "effect": "increment_protection_ring",
+    "maxRank": 8
   },
   {
     "id": "magnet",
@@ -70,7 +76,8 @@
     "type": "stat",
     "stat": "magnetRadius",
     "value": 1.5,
-    "op": "multiply"
+    "op": "multiply",
+    "maxRank": 8
   },
   {
     "id": "piercing_warheads",
@@ -79,7 +86,8 @@
     "rarity": "rare",
     "icon": "🏹",
     "type": "special",
-    "effect": "increment_pierce"
+    "effect": "increment_pierce",
+    "maxRank": 10
   },
   {
     "id": "explosive_payload",
@@ -88,7 +96,8 @@
     "rarity": "rare",
     "icon": "💥",
     "type": "special",
-    "effect": "increment_explosion"
+    "effect": "increment_explosion",
+    "maxRank": 10
   },
   {
     "id": "homing_tech",
@@ -97,7 +106,8 @@
     "rarity": "legendary",
     "icon": "📡",
     "type": "special",
-    "effect": "increment_homing"
+    "effect": "increment_homing",
+    "maxRank": 8
   },
   {
     "id": "sniper_module",
@@ -106,7 +116,8 @@
     "rarity": "common",
     "icon": "🎯",
     "type": "special",
-    "effect": "sniper_module"
+    "effect": "sniper_module",
+    "maxRank": 8
   },
   {
     "id": "depth_charge",
@@ -115,7 +126,8 @@
     "rarity": "rare",
     "icon": "⚓",
     "type": "special",
-    "effect": "unlock_depth_charge"
+    "effect": "unlock_depth_charge",
+    "maxRank": 8
   },
   {
     "id": "critical_circuits",
@@ -126,7 +138,8 @@
     "type": "stat",
     "stat": "critChance",
     "value": 0.1,
-    "op": "add"
+    "op": "add",
+    "maxRank": 10
   },
   {
     "id": "plasma_field",
@@ -135,7 +148,8 @@
     "rarity": "rare",
     "icon": "⚛️",
     "type": "special",
-    "effect": "unlock_plasma"
+    "effect": "unlock_plasma",
+    "maxRank": 8
   },
   {
     "id": "vampiric_torpedoes",
@@ -144,7 +158,8 @@
     "rarity": "legendary",
     "icon": "🧛",
     "type": "special",
-    "effect": "unlock_vampire"
+    "effect": "unlock_vampire",
+    "maxRank": 5
   },
   {
     "id": "titanium_plating",
@@ -155,7 +170,8 @@
     "type": "stat",
     "stat": "damageReduction",
     "value": 0.1,
-    "op": "add"
+    "op": "add",
+    "maxRank": 10
   },
   {
     "id": "scavenger_protocol",
@@ -166,7 +182,8 @@
     "type": "stat",
     "stat": "scavengerChance",
     "value": 0.01,
-    "op": "add"
+    "op": "add",
+    "maxRank": 10
   },
   {
     "id": "deep_pressure",
@@ -175,7 +192,8 @@
     "rarity": "legendary",
     "icon": "⏬",
     "type": "special",
-    "effect": "unlock_deep_pressure"
+    "effect": "unlock_deep_pressure",
+    "maxRank": 5
   },
   {
     "id": "scatter_shot",
@@ -184,7 +202,8 @@
     "rarity": "rare",
     "icon": "✨",
     "type": "special",
-    "effect": "unlock_scatter"
+    "effect": "unlock_scatter",
+    "maxRank": 8
   },
   {
     "id": "rear_guns",
@@ -193,7 +212,8 @@
     "rarity": "common",
     "icon": "🔙",
     "type": "special",
-    "effect": "unlock_rear_guns"
+    "effect": "unlock_rear_guns",
+    "maxRank": 8
   },
   {
     "id": "helix_rounds",
@@ -202,7 +222,8 @@
     "rarity": "common",
     "icon": "🧬",
     "type": "special",
-    "effect": "unlock_helix"
+    "effect": "unlock_helix",
+    "maxRank": 8
   },
   {
     "id": "knockback_ammo",
@@ -211,7 +232,8 @@
     "rarity": "common",
     "icon": "🥊",
     "type": "special",
-    "effect": "increment_knockback"
+    "effect": "increment_knockback",
+    "maxRank": 10
   },
   {
     "id": "cryo_rounds",
@@ -220,7 +242,8 @@
     "rarity": "rare",
     "icon": "❄️",
     "type": "special",
-    "effect": "unlock_freeze"
+    "effect": "unlock_freeze",
+    "maxRank": 8
   },
   {
     "id": "giant_torpedo",
@@ -229,6 +252,7 @@
     "rarity": "legendary",
     "icon": "🚀",
     "type": "special",
-    "effect": "unlock_giant"
+    "effect": "unlock_giant",
+    "maxRank": 5
   }
 ]

@@ -14,6 +14,7 @@ export interface UpgradeDef {
   value?: number;
   op?: 'add' | 'multiply';
   effect?: string;
+  maxRank?: number;
 }
 
 export interface PlayerUpgrade {
@@ -41,8 +42,37 @@ export class UpgradeManager {
       if (rand > 0.95) rarity = 'legendary';
       else if (rand > 0.70) rarity = 'rare';
 
-      const candidates = this.upgrades.filter(u => u.rarity === rarity);
-      if (candidates.length === 0) continue; 
+      // Filter out upgrades that have reached max rank
+      const candidates = this.upgrades.filter(u => {
+        if (u.rarity !== rarity) return false;
+        
+        // Check if upgrade has reached max rank
+        const playerUpgrade = this.playerUpgrades.get(u.id);
+        if (playerUpgrade && u.maxRank) {
+          return playerUpgrade.count < u.maxRank;
+        }
+        
+        return true; // No max rank or not yet acquired
+      });
+      
+      if (candidates.length === 0) {
+        // If no candidates for this rarity, try any rarity
+        const allCandidates = this.upgrades.filter(u => {
+          const playerUpgrade = this.playerUpgrades.get(u.id);
+          if (playerUpgrade && u.maxRank) {
+            return playerUpgrade.count < u.maxRank;
+          }
+          return true;
+        });
+        
+        if (allCandidates.length === 0) break; // No upgrades available
+        
+        const pick = allCandidates[Math.floor(Math.random() * allCandidates.length)];
+        if (!result.includes(pick)) {
+          result.push(pick);
+        }
+        continue;
+      }
 
       const pick = candidates[Math.floor(Math.random() * candidates.length)];
       
@@ -54,6 +84,13 @@ export class UpgradeManager {
   }
 
   applyUpgrade(upgrade: UpgradeDef) {
+    // Check if upgrade has reached max rank
+    const currentUpgrade = this.playerUpgrades.get(upgrade.id);
+    if (currentUpgrade && upgrade.maxRank && currentUpgrade.count >= upgrade.maxRank) {
+      // Already at max rank, don't apply
+      return;
+    }
+    
     // Track it
     if (this.playerUpgrades.has(upgrade.id)) {
       this.playerUpgrades.get(upgrade.id)!.count++;

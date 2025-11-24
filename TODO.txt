@@ -1,28 +1,11 @@
-ALL TASKS COMPLETED
+Right now chests can spawn way too close to each other and way otherto frequently. 
+Make it so that every chest spawns once in a random location within each 100x100 square meter area. (based on the games meters not pixels!!)
+Spawn 100 chests like this at the start of the game with the player location being the center.
 
-POWER UP CHANGES
----------------------
-[x] Make power ups ui display wrap to next row every 10
-[x] There is a bug where the hp sometimes overfills the bottom of its container. investigate and fix
-[x] Make the helix power up much less drastic. also now when it starts it fires from the top of the sub, make it start from its front (and again much less wide)
-[x] Make the power up that makes torpedoes do aoe have an animation when the aoe goes happens
-[x] make the downward bombs also have an animation when they explode
-[x] make the downward bombs look more like actual bombs with little fuses
-[x] let the user choose from 1 of 4 power ups every level up instead of 3
-[x] rename the protection ring power up to Circling torpedoes
+Make the explosions more see through as they are a bit too obnoxious at higher levels.
 
-GAMEPLAY CHANGES
-------------------
-[x] Add random hidden treasure chests that spawn in places on the map. They should be relatively common. When the sub touches them the normal gameplay is paused and there is a minigame where a guage spins in a cirle. really fast.'
-[x] There are spots on the gauge for green/purple/orange and when the users presses space to stop the gauge, they get a powerup of that color rarity at random. The game should do a short animation showing them what they got and give some confetti.
-[x] Make the xp orbs scale based on how much xp they give. the max size should only be about 3x what they are from min xp.
-[x] When the player reaches the bottom , of the map, they should get large text on the screen that flashes and says: Search the seabed! Find the abyssal trench!
-[x] At that point after the player has moved 250m or so in either direction a trench appears below the sea bed. when they enter they get teleported to a final boss fight.
-[x] If the player is more then 300m away from the trench horizontally, they should get static text that says: The water goes no deeper this way!
+make the downard bombs a bit smaller (the bombs themselves NOT the xplosions)
 
-FINAL BOSS Fight
-------------------
-[x] The player is now in a deep dark ocean. The depth meter goes away.
-[x] Create a boss fight that is a giant kraken with many tentacles. He should have special attacks and spawn monsters. 
-[x] The place were the hp bar was will now be the Krakens HP.
-[x] When the kraken is killed, the player gets a You Conquered The Abyss! final screen. It should show them their total stats, power ups, time spent playing, length of kraken fight. etc. Anything else you think will be interesting.
+assign a max rank to each power up, if the player has max rank they cant find any more of that power up, you decide what the max rank should be for each based on the skills power. no max rank should be less then 5
+
+

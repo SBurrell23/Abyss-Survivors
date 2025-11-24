@@ -113,6 +113,9 @@ export class Game {
     this.player.spawnDepthCharge = () => {
         this.depthCharges.push(new DepthCharge(this, this.player.position.x, this.player.position.y));
     };
+    
+    // Spawn initial treasure chests
+    this.spawnInitialChests();
   }
   
   setupDebugMenu() {
@@ -599,10 +602,7 @@ export class Game {
         if (c) return; // keep compiler happy
     });
     
-    // Spawn Treasure Chests
-    if (Math.random() < 0.001) { // Rare spawn
-        this.spawnTreasure();
-    }
+    // No longer spawning chests randomly - they're all spawned at start
 
     // Spawner logic
     // Spawn rate increases with depth
@@ -703,6 +703,49 @@ export class Game {
      // Scavenger Protocol Drop? (Only on kill, moved to checkCollisions or Enemy)
   }
 
+  spawnInitialChests() {
+      const PIXELS_PER_METER = 25;
+      const AREA_SIZE_METERS = 100;
+      const AREA_SIZE_PIXELS = AREA_SIZE_METERS * PIXELS_PER_METER; // 2500 pixels
+      const TOTAL_CHESTS = 100;
+      
+      // Create a 10x10 grid centered on player (0, 0)
+      // Each cell is 100x100 meters
+      const gridSize = Math.ceil(Math.sqrt(TOTAL_CHESTS)); // 10x10 grid
+      const halfGrid = Math.floor(gridSize / 2);
+      
+      const usedAreas = new Set<string>();
+      
+      for (let i = 0; i < TOTAL_CHESTS; i++) {
+          let gridX, gridY;
+          let attempts = 0;
+          
+          // Find an unused grid cell
+          do {
+              gridX = Math.floor(Math.random() * gridSize) - halfGrid;
+              gridY = Math.floor(Math.random() * gridSize) - halfGrid;
+              attempts++;
+          } while (usedAreas.has(`${gridX},${gridY}`) && attempts < 1000);
+          
+          if (attempts >= 1000) break; // Safety check
+          
+          usedAreas.add(`${gridX},${gridY}`);
+          
+          // Calculate the center of this grid cell in pixels
+          const cellCenterX = gridX * AREA_SIZE_PIXELS + AREA_SIZE_PIXELS / 2;
+          const cellCenterY = gridY * AREA_SIZE_PIXELS + AREA_SIZE_PIXELS / 2;
+          
+          // Spawn chest at random location within this 100x100 meter area
+          const offsetX = (Math.random() - 0.5) * AREA_SIZE_PIXELS * 0.8; // 80% of area to avoid edges
+          const offsetY = (Math.random() - 0.5) * AREA_SIZE_PIXELS * 0.8;
+          
+          const chestX = cellCenterX + offsetX;
+          const chestY = cellCenterY + offsetY;
+          
+          this.treasureChests.push(new TreasureChest(this, chestX, chestY));
+      }
+  }
+
   spawnTreasure() {
       // Spawn off-screen
       const side = Math.random() > 0.5 ? 1 : -1;
@@ -735,8 +778,26 @@ export class Game {
       if (this.minigameCursor >= 0.425 && this.minigameCursor <= 0.575) rarity = 'rare';
       if (this.minigameCursor >= 0.475 && this.minigameCursor <= 0.525) rarity = 'legendary';
       
-      const upgrades = this.upgradeManager.upgrades.filter(u => u.rarity === rarity);
-      const pick = upgrades[Math.floor(Math.random() * upgrades.length)];
+      // Filter out upgrades that have reached max rank
+      const upgrades = this.upgradeManager.upgrades.filter(u => {
+        if (u.rarity !== rarity) return false;
+        const playerUpgrade = this.upgradeManager.playerUpgrades.get(u.id);
+        if (playerUpgrade && u.maxRank) {
+          return playerUpgrade.count < u.maxRank;
+        }
+        return true;
+      });
+      
+      // If no upgrades available for this rarity, try any rarity
+      const availableUpgrades = upgrades.length > 0 ? upgrades : this.upgradeManager.upgrades.filter(u => {
+        const playerUpgrade = this.upgradeManager.playerUpgrades.get(u.id);
+        if (playerUpgrade && u.maxRank) {
+          return playerUpgrade.count < u.maxRank;
+        }
+        return true;
+      });
+      
+      const pick = availableUpgrades[Math.floor(Math.random() * availableUpgrades.length)];
       
       if (pick) {
           this.upgradeManager.applyUpgrade(pick);
