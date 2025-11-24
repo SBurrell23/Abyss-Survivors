@@ -25,15 +25,19 @@ export class Explosion {
         
         if (progress >= 1) {
             this.active = false;
+            this.radius = 0; // Ensure radius is 0 when inactive
             return;
         }
 
-        // Expand then fade
-        this.radius = this.maxRadius * Math.sin(progress * Math.PI);
+        // Expand then fade - clamp to ensure radius is never negative
+        this.radius = Math.max(0, this.maxRadius * Math.sin(progress * Math.PI));
     }
 
     draw(ctx: CanvasRenderingContext2D) {
         if (!this.active) return;
+        
+        // Safety check: don't draw if radius is invalid
+        if (this.radius <= 0) return;
         
         ctx.save();
         // Make explosions more transparent - max opacity 0.5 instead of 1.0
