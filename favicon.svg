@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Submarine body -->
+  <ellipse cx="16" cy="16" rx="12" ry="6" fill="#ffd700" stroke="#b8860b" stroke-width="1"/>
+  
+  <!-- Submarine top (conning tower) -->
+  <ellipse cx="16" cy="10" rx="4" ry="3" fill="#ffed4e" stroke="#b8860b" stroke-width="1"/>
+  
+  <!-- Window -->
+  <circle cx="16" cy="10" r="2" fill="#87ceeb"/>
+  
+  <!-- Propeller -->
+  <ellipse cx="4" cy="16" rx="2" ry="4" fill="#333"/>
+  <line x1="2" y1="14" x2="2" y2="18" stroke="#666" stroke-width="1"/>
+  <line x1="3" y1="13" x2="3" y2="19" stroke="#666" stroke-width="1"/>
+  <line x1="4" y1="12" x2="4" y2="20" stroke="#666" stroke-width="1"/>
+</svg>
+

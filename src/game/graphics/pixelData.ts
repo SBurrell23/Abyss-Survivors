@@ -6,26 +6,29 @@ export interface SpriteDef {
 
 export const spriteDefinitions: Record<string, SpriteDef> = {
     player: {
-        size: [16, 16],
+        size: [20, 12],
         palette: { 
             '.': 'transparent', 
-            'Y': '#FFD700', // Yellow
-            'D': '#DAA520', // Dark Yellow
-            'G': '#A9A9A9', // Grey
+            'Y': '#FFD700', // Yellow (main body)
+            'L': '#FFED4E', // Light Yellow (conning tower)
+            'D': '#B8860B', // Dark Yellow (border/shadow)
             'B': '#87CEEB', // Blue (Window)
+            'P': '#222222', // Dark (Propeller)
+            'O': '#FFA500', // Orange (decoration)
         },
         data: [
-            "......GG........",
-            "......GG........",
-            ".....GGGG.......",
-            "....YYYYYY......",
-            "...YYYYYYYY.....",
-            "..YYYYBBYYYD....",
-            ".YYYYYBBYYYYD...",
-            ".YYYYYYYYYYYYD..",
-            "..YYYYYYYYYYD...",
-            "...YYYYYYYYD....",
-            "....DDDDDD......"
+            "....................",
+            ".........LLL........",
+            "........LBBBL.......",
+            ".......LBBBBBL......",
+            "P..YYYYYYYYYYYYYY....",
+            "PP.YYYYYYDDDYYYYYY..",
+            "P.PYYYYYDOODYYYYYYY.",
+            "PP.YYYYYYDDDYYYYYY..",
+            "P..YYYYYYYYYYYYYY....",
+            "....................",
+            "....................",
+            "...................."
         ]
     },
     enemy_fish: { // Used for guppy, piranha
