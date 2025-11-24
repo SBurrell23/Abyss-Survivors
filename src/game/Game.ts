@@ -1128,10 +1128,7 @@ export class Game {
   levelUp() {
       this.upgradeLevel++;
       this.xp -= this.xpToNextLevel;
-      // Increase multiplier for mid-levels (5+) to slow down progression
-      // Base 1.44x (20% more than original 1.2x), increases by 0.024 per level, caps at 1.68x for high levels
-      const multiplier = 1.44 + Math.min(0.24, (this.upgradeLevel - 1) * 0.024);
-      this.xpToNextLevel = Math.floor(this.xpToNextLevel * multiplier);
+      this.xpToNextLevel = Math.floor(this.xpToNextLevel * 1.2);
       this.showUpgradeMenu();
   }
 
@@ -1265,7 +1262,7 @@ export class Game {
       if (deathScreen) {
           deathScreen.style.display = 'flex';
           const h1 = deathScreen.querySelector('h1');
-          if (h1) h1.innerText = "Your Sub Imploded!";
+          if (h1) h1.innerText = "Your sub imploded!";
           
           // Show default death screen stats and hide victory stats
           const deathLevel = document.getElementById('death-level');
