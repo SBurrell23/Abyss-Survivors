@@ -49,6 +49,9 @@ export class Player {
   plasmaTimer: number = 0; // For damage tick
 
   vampireCounter: number = 0; // Track kills for vampire
+  
+  // Debug
+  isInvulnerable: boolean = false;
 
   constructor(game: Game, x: number, y: number) {
     this.game = game;
@@ -110,11 +113,19 @@ export class Player {
       const radius = 50 + (this.plasmaFieldLevel * 10);
       const damage = 5 * this.plasmaFieldLevel;
       
+      // Damage enemies
       this.game.enemies.forEach(e => {
           if (this.position.distanceTo(e.position) < radius + e.radius) {
               e.takeDamage(damage);
           }
       });
+      
+      // Damage Kraken during boss fight
+      if (this.game.isBossFight && this.game.kraken) {
+          if (this.position.distanceTo(this.game.kraken.position) < radius + this.game.kraken.radius) {
+              this.game.kraken.takeDamage(damage);
+          }
+      }
   }
 
   shootAtMouse() {
@@ -259,6 +270,9 @@ export class Player {
   }
 
   takeDamage(amount: number) {
+    // Debug invulnerability
+    if (this.isInvulnerable) return;
+    
     // Apply Damage Reduction
     const reducedAmount = amount * (1 - this.damageReduction);
     this.hp -= reducedAmount;

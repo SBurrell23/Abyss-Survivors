@@ -46,6 +46,17 @@
           display: flex; align-items: center; justify-content: center; 
           font-size: 12px; text-shadow: 1px 1px 1px black; 
       }
+      
+      /* Boss HP Bar */
+      #boss-hp-bar-container {
+          width: 300px; height: 25px; 
+          background: #333; border: 2px solid #9c27b0; 
+          border-radius: 4px; overflow: hidden;
+          position: absolute;
+          top: 55px; left: 50%;
+          transform: translateX(-50%);
+          box-shadow: 0 0 10px rgba(156, 39, 176, 0.5);
+      }
 
       /* XP Bar */
       #xp-bar-container { 
@@ -152,6 +163,15 @@
           position: absolute;
           top: 0; left: 0;
           box-shadow: 0 0 10px #fff;
+      }
+
+      /* Debug Menu */
+      #debug-menu {
+          pointer-events: auto;
+          cursor: default;
+      }
+      #debug-menu button {
+          cursor: pointer;
       }
 
       /* Menus */
@@ -286,6 +306,15 @@
           <div id="hp-text">100 / 100</div>
       </div>
       
+      <div id="boss-hp-bar-container" class="ui-element" style="display:none;">
+          <div id="boss-hp-bar" style="width:100%; height:100%; background:#9c27b0; transition:width 0.2s;"></div>
+          <div id="boss-hp-text" style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:12px; text-shadow:1px 1px 1px black;">KRAKEN: 5000 / 5000</div>
+      </div>
+      
+      <div id="boss-phase-indicator" class="ui-element" style="display:none; position:absolute; top:90px; left:50%; transform:translateX(-50%); font-size:18px; font-weight:bold; text-shadow:2px 2px 4px black; color:#fff;">
+          <span id="boss-phase-text">PHASE 1</span>
+      </div>
+      
       <div id="score-container" class="ui-element">
           Score: <span id="score">0</span>
       </div>
@@ -325,6 +354,47 @@
               <div id="reward-content" style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                   <!-- Injected content -->
               </div>
+          </div>
+      </div>
+
+      <!-- Debug Menu -->
+      <div id="debug-menu" style="display:none; position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.9); padding:20px; border:1px solid #fff; color:#fff; z-index:1001; max-height: 90vh; overflow-y: auto; pointer-events: auto;">
+          <h3>Debug Menu</h3>
+          <p>Press ` to toggle</p>
+          
+          <div style="margin-bottom: 20px;">
+              <label>Depth (m): <span id="debug-depth-val">0</span></label>
+              <input type="range" id="debug-depth-slider" min="0" max="1200" value="0" style="width:100%;">
+          </div>
+
+          <div style="margin-bottom: 20px;">
+              <button id="debug-add-xp" style="padding: 10px; cursor: pointer; width: 100%;">Add +100 XP</button>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+              <label style="display: flex; align-items: center; gap: 10px;">
+                  <input type="checkbox" id="debug-invulnerable" style="width: 20px; height: 20px;">
+                  <span>Invulnerable</span>
+              </label>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+              <label style="display: flex; align-items: center; gap: 10px;">
+                  <input type="checkbox" id="debug-speed" style="width: 20px; height: 20px;">
+                  <span>5x Speed</span>
+              </label>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+              <label style="display: flex; align-items: center; gap: 10px;">
+                  <input type="checkbox" id="debug-no-level-up" style="width: 20px; height: 20px;">
+                  <span>Disable Level Up</span>
+              </label>
+          </div>
+
+          <h4>Add Power Up</h4>
+          <div id="debug-powerups" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;">
+              <!-- Buttons injected here -->
           </div>
       </div>
 

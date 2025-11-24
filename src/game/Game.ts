@@ -7,6 +7,7 @@ import { DepthCharge } from './entities/NewEntities';
 import { Explosion } from './entities/Explosion';
 import { TreasureChest } from './entities/TreasureChest';
 import { Kraken } from './entities/Kraken';
+import { Obstacle } from './entities/Obstacle';
 import { Vector2 } from './utils';
 import { UpgradeManager } from './UpgradeManager';
 import monstersData from './data/monsters.json';
@@ -38,8 +39,12 @@ export class Game {
   explosions: Explosion[] = [];
   treasureChests: TreasureChest[] = [];
   kraken: Kraken | null = null;
+  obstacles: Obstacle[] = [];
   
   upgradeManager: UpgradeManager;
+  
+  // Boss Fight Arena
+  arenaBounds: { minX: number; maxX: number; minY: number; maxY: number } | null = null;
   
   // Game State
   isMinigameActive: boolean = false;
@@ -47,6 +52,10 @@ export class Game {
   minigameDirection: number = 1; 
   minigameShowingReward: boolean = false;
   
+  // Debug
+  isDebugMenuOpen: boolean = false;
+  disableLevelUp: boolean = false;
+
   // Map Logic
   trenchX: number | null = null;
   isBossFight: boolean = false;
@@ -85,6 +94,10 @@ export class Game {
         if (this.isMinigameActive && e.code === 'Space') {
             this.stopMinigame();
         }
+        // Toggle Debug Menu
+        if (e.key === '`') {
+            this.toggleDebugMenu();
+        }
     });
 
     this.setupRestart();
@@ -93,12 +106,124 @@ export class Game {
     this.player = new Player(this, 0, 0);
     this.upgradeManager = new UpgradeManager(this);
     
+    // Initialize Debug Menu after UpgradeManager is ready
+    this.setupDebugMenu();
+    
     // Override Player spawn methods to hook into Game
     this.player.spawnDepthCharge = () => {
         this.depthCharges.push(new DepthCharge(this, this.player.position.x, this.player.position.y));
     };
   }
   
+  setupDebugMenu() {
+      const menu = document.getElementById('debug-menu');
+      const depthSlider = document.getElementById('debug-depth-slider') as HTMLInputElement;
+      const depthVal = document.getElementById('debug-depth-val');
+      const powerupsContainer = document.getElementById('debug-powerups');
+      const xpButton = document.getElementById('debug-add-xp');
+      const invulnCheckbox = document.getElementById('debug-invulnerable') as HTMLInputElement;
+      const speedCheckbox = document.getElementById('debug-speed') as HTMLInputElement;
+      const noLevelUpCheckbox = document.getElementById('debug-no-level-up') as HTMLInputElement;
+      
+      if (!menu || !depthSlider || !powerupsContainer || !xpButton || !invulnCheckbox || !speedCheckbox || !noLevelUpCheckbox) return;
+      
+      // Depth Slider Logic
+      depthSlider.oninput = (e: any) => {
+          const meters = parseInt(e.target.value);
+          if (depthVal) depthVal.innerText = meters.toString();
+          
+          const PIXELS_PER_METER = 25;
+          this.player.position.y = meters * PIXELS_PER_METER;
+          
+          // Update trench logic triggers
+          if (meters < 900 && this.isBossFight) {
+              // Reset boss fight if pulled out? maybe not for now
+          }
+      };
+      
+      // Add XP Button
+      xpButton.onclick = () => {
+          this.collectXP(100);
+          this.updateUI();
+      };
+      
+      // Invulnerability Checkbox
+      invulnCheckbox.onchange = (e: any) => {
+          this.player.isInvulnerable = e.target.checked;
+      };
+      
+      // Speed Checkbox (5x speed)
+      const normalSpeed = 200;
+      speedCheckbox.onchange = (e: any) => {
+          if (e.target.checked) {
+              this.player.speed = normalSpeed * 5; // 1000
+          } else {
+              this.player.speed = normalSpeed; // 200
+          }
+      };
+      
+      // No Level Up Checkbox
+      noLevelUpCheckbox.onchange = (e: any) => {
+          this.disableLevelUp = e.target.checked;
+      };
+      
+      // Populate Power Ups
+      this.upgradeManager.upgrades.forEach(up => {
+          const btn = document.createElement('button');
+          btn.innerText = `${up.icon} ${up.name}`;
+          btn.title = up.description;
+          btn.style.padding = '5px';
+          btn.style.cursor = 'pointer';
+          btn.style.textAlign = 'left';
+          btn.onclick = () => {
+              this.upgradeManager.applyUpgrade(up);
+              this.updateUI();
+          };
+          powerupsContainer.appendChild(btn);
+      });
+      
+      // Add "Jump to Boss Fight" button
+      const bossButton = document.createElement('button');
+      bossButton.innerText = 'Jump to Boss Fight';
+      bossButton.style.padding = '10px';
+      bossButton.style.cursor = 'pointer';
+      bossButton.style.width = '100%';
+      bossButton.style.marginTop = '20px';
+      bossButton.style.backgroundColor = '#9c27b0';
+      bossButton.style.color = 'white';
+      bossButton.style.border = 'none';
+      bossButton.style.borderRadius = '4px';
+      bossButton.style.fontWeight = 'bold';
+      bossButton.onclick = () => {
+          this.enterBossFight();
+          this.updateUI();
+      };
+      const firstChild = menu.firstChild;
+      if (firstChild && firstChild.nextSibling) {
+          menu.insertBefore(bossButton, firstChild.nextSibling);
+      } else {
+          menu.appendChild(bossButton);
+      }
+  }
+  
+  toggleDebugMenu() {
+      this.isDebugMenuOpen = !this.isDebugMenuOpen;
+      const menu = document.getElementById('debug-menu');
+      if (menu) {
+          menu.style.display = this.isDebugMenuOpen ? 'block' : 'none';
+      }
+      
+      // Sync slider with current depth
+      if (this.isDebugMenuOpen) {
+          const depthSlider = document.getElementById('debug-depth-slider') as HTMLInputElement;
+          const depthVal = document.getElementById('debug-depth-val');
+          if (depthSlider) {
+              depthSlider.value = this.depth.toString();
+              if (depthVal) depthVal.innerText = this.depth.toString();
+          }
+      }
+  }
+
   createExplosion(pos: Vector2, radius: number, damage: number) {
       // Simple visual or damage if damage > 0
       if (damage > 0) {
@@ -162,6 +287,9 @@ export class Game {
   }
   
   drawSeaFloor(ctx: CanvasRenderingContext2D) {
+      // Don't draw seabed during boss fight
+      if (this.isBossFight) return;
+      
       const MAX_DEPTH_METERS = 1000;
       const PIXELS_PER_METER = 25;
       const floorY = MAX_DEPTH_METERS * PIXELS_PER_METER;
@@ -176,19 +304,29 @@ export class Game {
       ctx.fillStyle = '#1a100e'; 
       ctx.fillRect(this.camera.x, floorY + 50, this.canvas.width, 2000); 
 
-      // Trench Graphic
-      if (this.trenchX !== null) {
-           const trenchWidth = 500;
-           const trenchLeft = this.trenchX - trenchWidth/2;
-           
-           // Draw a dark hole
-           ctx.fillStyle = '#000010'; // Almost black blue
-           ctx.fillRect(trenchLeft, floorY, trenchWidth, 2000);
-      }
-
-      // Draw Sand Layer (base)
+      // Draw Sand Layer (base) - but skip trench area
       ctx.fillStyle = floorColor;
-      ctx.fillRect(this.camera.x, floorY, this.canvas.width, 50);
+      if (this.trenchX !== null) {
+          const trenchWidth = 500;
+          const trenchLeft = this.trenchX - trenchWidth/2;
+          const trenchRight = this.trenchX + trenchWidth/2;
+          
+          // Draw left side of sand
+          if (trenchLeft > this.camera.x) {
+              ctx.fillRect(this.camera.x, floorY, trenchLeft - this.camera.x, 50);
+          }
+          // Draw right side of sand
+          if (trenchRight < this.camera.x + this.canvas.width) {
+              ctx.fillRect(trenchRight, floorY, (this.camera.x + this.canvas.width) - trenchRight, 50);
+          }
+          
+          // Draw trench hole (dark void)
+          ctx.fillStyle = '#000010'; // Almost black blue
+          ctx.fillRect(trenchLeft, floorY, trenchWidth, 2000);
+      } else {
+          // No trench yet, draw full sand layer
+          ctx.fillRect(this.camera.x, floorY, this.canvas.width, 50);
+      }
 
       // Procedural details
       // Iterate across the screen width in steps
@@ -196,8 +334,22 @@ export class Game {
       // Align startX to grid to prevent jitter when moving
       const startX = Math.floor(this.camera.x / step) * step;
       const endX = startX + this.canvas.width + step;
+      
+      // Get trench bounds if exists
+      let trenchLeft = -Infinity;
+      let trenchRight = Infinity;
+      if (this.trenchX !== null) {
+          const trenchWidth = 500;
+          trenchLeft = this.trenchX - trenchWidth/2;
+          trenchRight = this.trenchX + trenchWidth/2;
+      }
 
       for (let x = startX; x <= endX; x += step) {
+          // Skip if in trench area
+          if (x + step/2 >= trenchLeft && x + step/2 <= trenchRight) {
+              continue;
+          }
+          
           // Pseudo-random based on x coordinate
           // Using a simple seeded random concept: sin(x) is deterministic
           const noise = Math.sin(x * 0.05) + Math.sin(x * 0.13) * 0.5;
@@ -254,20 +406,6 @@ export class Game {
   setupInput() {
     window.addEventListener('keydown', (e) => {
       this.input.keys[e.key] = true;
-      
-      // Debug: Ctrl + P to toggle 25x speed and 100x XP
-      if (e.ctrlKey && e.code === 'KeyP') {
-          e.preventDefault(); 
-          if (this.player.speed === 200) {
-              this.player.speed = 5000; 
-              this.xpMultiplier = 100;
-              console.log("Debug: Speed set to 5000 (25x), XP x100");
-          } else {
-              this.player.speed = 200; 
-              this.xpMultiplier = 1;
-              console.log("Debug: Speed reset to 200, XP x1");
-          }
-      }
     });
     window.addEventListener('keyup', (e) => {
       this.input.keys[e.key] = false;
@@ -320,12 +458,45 @@ export class Game {
         this.kraken.update(dt);
         this.player.update(dt);
         
-        // Keep player in bounds for boss fight
-        // ...
+        // Arena boundaries - keep player in bounds
+        if (this.arenaBounds) {
+            if (this.player.position.x < this.arenaBounds.minX) {
+                this.player.position.x = this.arenaBounds.minX;
+            }
+            if (this.player.position.x > this.arenaBounds.maxX) {
+                this.player.position.x = this.arenaBounds.maxX;
+            }
+            if (this.player.position.y < this.arenaBounds.minY) {
+                this.player.position.y = this.arenaBounds.minY;
+            }
+            if (this.player.position.y > this.arenaBounds.maxY) {
+                this.player.position.y = this.arenaBounds.maxY;
+            }
+        }
+        
+        // Update camera to follow player during boss fight
+        this.camera.x = this.player.position.x - this.canvas.width / 2;
+        this.camera.y = this.player.position.y - this.canvas.height / 2;
+        
+        // Update Enemies
+        this.enemies.forEach(e => e.update(dt));
+        this.enemies = this.enemies.filter(e => e.active);
+        
+        // Update XP Orbs
+        this.xpOrbs.forEach(o => o.update(dt));
+        this.xpOrbs = this.xpOrbs.filter(o => o.active);
         
         // Update Projectiles
         this.projectiles.forEach(p => p.update(dt));
         this.projectiles = this.projectiles.filter(p => p.active);
+        
+        // Update Explosions
+        this.explosions.forEach(e => e.update(dt));
+        this.explosions = this.explosions.filter(e => e.active);
+        
+        // Update Depth Charges
+        this.depthCharges.forEach(d => d.update(dt));
+        this.depthCharges = this.depthCharges.filter(d => d.active);
         
         // Collisions
         this.checkCollisions();
@@ -364,11 +535,20 @@ export class Game {
         this.trenchX = this.player.position.x + direction * 6250;
     }
     
-    // Check for trench entry
-    if (this.trenchX !== null) {
-        const dist = Math.abs(this.player.position.x - this.trenchX);
-        // Trench is approx 500px wide
-        if (dist < 250 && this.depth >= 980) {
+    // Check for trench entry - player must be at seabed level AND within trench bounds
+    if (this.trenchX !== null && !this.isBossFight) {
+        const trenchWidth = 500;
+        const trenchLeft = this.trenchX - trenchWidth/2;
+        const trenchRight = this.trenchX + trenchWidth/2;
+        
+        // Check if player is at seabed level (within 50 pixels of floor)
+        const floorY = MAX_DEPTH_PIXELS;
+        const isAtSeabed = Math.abs(this.player.position.y - floorY) < 50;
+        
+        // Check if player is within trench bounds horizontally
+        const isInTrenchX = this.player.position.x >= trenchLeft && this.player.position.x <= trenchRight;
+        
+        if (isAtSeabed && isInTrenchX) {
             this.enterBossFight();
         }
     }
@@ -579,7 +759,7 @@ export class Game {
           if (layer) layer.style.display = 'none';
           this.isMinigameActive = false;
           this.minigameShowingReward = false;
-      }, 2000);
+      }, 2800);
   }
 
   enterBossFight() {
@@ -587,14 +767,56 @@ export class Game {
       this.enemies = [];
       this.projectiles = [];
       this.depthCharges = [];
+      this.treasureChests = [];
+      this.xpOrbs = [];
+      this.obstacles = [];
       
-      // Teleport
-      this.player.position.y += 2000; // Deep ocean
-      this.kraken = new Kraken(this, this.player.position.x, this.player.position.y + 500);
+      // Teleport to deep dark ocean arena
+      // Center player and kraken in a large arena
+      const arenaCenterX = 0;
+      const arenaCenterY = 0; // Start at origin for boss fight
+      const arenaSize = 3000; // Large square arena (50% larger)
+      
+      // Set arena boundaries
+      this.arenaBounds = {
+          minX: arenaCenterX - arenaSize / 2,
+          maxX: arenaCenterX + arenaSize / 2,
+          minY: arenaCenterY - arenaSize / 2,
+          maxY: arenaCenterY + arenaSize / 2
+      };
+      
+      this.player.position.x = arenaCenterX;
+      this.player.position.y = arenaCenterY;
+      this.kraken = new Kraken(this, arenaCenterX, arenaCenterY - 200); // Kraken above player
+      
+      // Spawn themed obstacles
+      this.spawnBossObstacles(arenaCenterX, arenaCenterY, arenaSize);
+      
+      // Reset camera to center on player
+      this.camera.x = arenaCenterX - this.canvas.width / 2;
+      this.camera.y = arenaCenterY - this.canvas.height / 2;
       
       // UI Updates
       const depthMeter = document.getElementById('depth-meter-container');
       if (depthMeter) depthMeter.style.display = 'none';
+  }
+  
+  spawnBossObstacles(centerX: number, centerY: number, arenaSize: number) {
+      // Spawn tentacle barriers around the arena (longer tentacles)
+      const tentacleCount = 8;
+      const tentacleMinDist = 400; // Minimum distance from center
+      const tentacleMaxDist = arenaSize / 2 - 150; // Maximum distance from center
+      
+      for (let i = 0; i < tentacleCount; i++) {
+          const angle = (Math.PI * 2 / tentacleCount) * i + Math.random() * 0.3;
+          const dist = tentacleMinDist + Math.random() * (tentacleMaxDist - tentacleMinDist);
+          const x = centerX + Math.cos(angle) * dist;
+          const y = centerY + Math.sin(angle) * dist;
+          
+          // Longer tentacle barriers
+          const radius = 200 + Math.random() * 100; // Much longer (was 40-70)
+          this.obstacles.push(new Obstacle(this, x, y, radius, 'tentacle_barrier'));
+      }
   }
   
   winGame() {
@@ -606,13 +828,40 @@ export class Game {
           const h1 = deathScreen.querySelector('h1');
           if (h1) h1.innerText = "YOU CONQUERED THE ABYSS!";
           
+          // Hide default death screen stats (they're for regular death, not victory)
+          const deathLevel = document.getElementById('death-level');
+          const deathScore = document.getElementById('death-score');
+          if (deathLevel) deathLevel.parentElement!.style.display = 'none';
+          if (deathScore) deathScore.parentElement!.style.display = 'none';
+          
+          // Remove existing victory stats if any (to prevent duplicates)
+          const existingStats = deathScreen.querySelector('.victory-stats');
+          if (existingStats) {
+              existingStats.remove();
+          }
+          
+          // Calculate total power ups
+          const inventory = this.upgradeManager.getInventory();
+          const totalPowerUps = inventory.reduce((sum, item) => sum + item.count, 0);
+          const uniquePowerUps = inventory.length;
+          
           // Add stats
           const stats = document.createElement('div');
+          stats.className = 'victory-stats';
           stats.innerHTML = `
-            <p>Time: ${Math.floor(this.lastTime / 1000)}s</p>
-            <p>Boss Fight: ${Math.floor(this.bossFightTimer)}s</p>
+            <p class="death-stat">Time Played: <span>${Math.floor(this.lastTime / 1000)}s</span></p>
+            <p class="death-stat">Boss Fight Duration: <span>${Math.floor(this.bossFightTimer)}s</span></p>
+            <p class="death-stat">Total Power Ups Collected: <span>${totalPowerUps}</span></p>
+            <p class="death-stat">Unique Power Ups: <span>${uniquePowerUps}</span></p>
+            <p class="death-stat">Final Score: <span>${this.score}</span></p>
+            <p class="death-stat">Max Depth: <span>${this.depth}m</span></p>
           `;
-          deathScreen.insertBefore(stats, document.getElementById('restart-btn'));
+          const restartBtn = document.getElementById('restart-btn');
+          if (restartBtn) {
+              deathScreen.insertBefore(stats, restartBtn);
+          } else {
+              deathScreen.appendChild(stats);
+          }
       }
   }
 
@@ -643,6 +892,89 @@ export class Game {
                  }
              }
           }
+          
+          // Player vs XP Orbs (boss fight)
+          for (const orb of this.xpOrbs) {
+              if (orb.position.distanceTo(this.player.position) < (orb.radius + this.player.radius)) {
+                  this.collectXP(orb.value);
+                  orb.active = false;
+              }
+          }
+          
+          // Depth Charges vs Enemies (boss fight)
+          this.depthCharges.forEach(dc => {
+              if (!dc.active) return;
+              for (const enemy of this.enemies) {
+                  if (dc.position.distanceTo(enemy.position) < (dc.radius + enemy.radius)) {
+                      dc.explode();
+                      break;
+                  }
+              }
+          });
+          
+          // Depth Charges vs Kraken
+          if (this.kraken) {
+              this.depthCharges.forEach(dc => {
+                  if (!dc.active) return;
+                  if (dc.position.distanceTo(this.kraken!.position) < (dc.radius + this.kraken!.radius)) {
+                      this.kraken!.takeDamage(100); // Damage kraken
+                      dc.explode();
+                  }
+              });
+          }
+          
+          // Player vs Obstacles
+          for (const obstacle of this.obstacles) {
+              if (!obstacle.active) continue;
+              
+              if (obstacle.type === 'tentacle_barrier') {
+                  // Check collision with tentacle line segments
+                  const time = performance.now() / 500;
+                  let collided = false;
+                  
+                  for(let i=0; i<4; i++) {
+                      const angle = (Math.PI * 2 / 4) * i + Math.sin(time + i) * 0.3;
+                      const endX = obstacle.position.x + Math.cos(angle) * obstacle.radius;
+                      const endY = obstacle.position.y + Math.sin(angle) * obstacle.radius;
+                      
+                      // Check distance from player to line segment
+                      const lineStart = obstacle.position;
+                      const lineEnd = new Vector2(endX, endY);
+                      const playerPos = this.player.position;
+                      
+                      // Vector from line start to end
+                      const lineVec = lineEnd.sub(lineStart);
+                      const lineLen = lineVec.length();
+                      if (lineLen === 0) continue;
+                      
+                      // Vector from line start to player
+                      const toPlayer = playerPos.sub(lineStart);
+                      
+                      // Project player onto line (dot product: a.x * b.x + a.y * b.y)
+                      const dotProduct = toPlayer.x * lineVec.x + toPlayer.y * lineVec.y;
+                      const t = Math.max(0, Math.min(1, dotProduct / (lineLen * lineLen)));
+                      const closestPoint = lineStart.add(lineVec.scale(t));
+                      
+                      // Check distance from player to closest point on line
+                      const distToLine = playerPos.distanceTo(closestPoint);
+                      const tentacleWidth = 15; // Line width
+                      
+                      if (distToLine < this.player.radius + tentacleWidth) {
+                          // Push player away from tentacle
+                          const pushDir = playerPos.sub(closestPoint).normalize();
+                          if (pushDir.length() > 0) {
+                              const overlap = (this.player.radius + tentacleWidth) - distToLine;
+                              this.player.position = this.player.position.add(pushDir.scale(overlap + 2));
+                          }
+                          collided = true;
+                      }
+                  }
+                  
+                  if (collided) continue;
+              }
+              // Seaweed doesn't block, just slows (handled in update)
+          }
+          
           return;
       }
 
@@ -726,8 +1058,8 @@ export class Game {
   }
 
   collectXP(amount: number) {
-      this.xp += amount * this.xpMultiplier;
-      if (this.xp >= this.xpToNextLevel) {
+      this.xp += amount;
+      if (this.xp >= this.xpToNextLevel && !this.disableLevelUp) {
           this.levelUp();
       }
   }
@@ -796,19 +1128,41 @@ export class Game {
           depthCursor.style.top = `${depthPct}%`;
       }
 
+      // Player HP Bar
       const hpBar = document.getElementById('hp-bar');
       const hpText = document.getElementById('hp-text');
       if (hpBar && hpText) {
+          const pct = (this.player.hp / this.player.maxHp) * 100;
+          hpBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+          hpText.innerText = `${Math.ceil(this.player.hp)} / ${this.player.maxHp}`;
+          hpBar.style.backgroundColor = '#ff4444';
+      }
+      
+      // Boss HP Bar
+      const bossHpContainer = document.getElementById('boss-hp-bar-container');
+      const bossHpBar = document.getElementById('boss-hp-bar');
+      const bossHpText = document.getElementById('boss-hp-text');
+      const phaseIndicator = document.getElementById('boss-phase-indicator');
+      const phaseText = document.getElementById('boss-phase-text');
+      if (bossHpContainer && bossHpBar && bossHpText) {
           if (this.isBossFight && this.kraken) {
+              bossHpContainer.style.display = 'block';
               const pct = (this.kraken.hp / this.kraken.maxHp) * 100;
-              hpBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
-              hpText.innerText = `KRAKEN: ${Math.ceil(this.kraken.hp)} / ${this.kraken.maxHp}`;
-              hpBar.style.backgroundColor = '#9c27b0'; // Purple
+              bossHpBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+              bossHpText.innerText = `KRAKEN: ${Math.ceil(this.kraken.hp)} / ${this.kraken.maxHp}`;
+              
+              // Phase indicator
+              if (phaseIndicator && phaseText) {
+                  phaseIndicator.style.display = 'block';
+                  const phaseNames = ['', 'PHASE 1', 'PHASE 2', 'FINAL PHASE'];
+                  const phaseColors = ['', '#9c27b0', '#ff5722', '#ff0000'];
+                  phaseText.innerText = phaseNames[this.kraken.phase];
+                  phaseText.style.color = phaseColors[this.kraken.phase];
+                  phaseIndicator.style.textShadow = `0 0 10px ${phaseColors[this.kraken.phase]}, 2px 2px 4px black`;
+              }
           } else {
-              const pct = (this.player.hp / this.player.maxHp) * 100;
-              hpBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
-              hpText.innerText = `${Math.ceil(this.player.hp)} / ${this.player.maxHp}`;
-              hpBar.style.backgroundColor = '#ff4444'; // Reset color
+              bossHpContainer.style.display = 'none';
+              if (phaseIndicator) phaseIndicator.style.display = 'none';
           }
       }
 
@@ -841,39 +1195,95 @@ export class Game {
       const deathScreen = document.getElementById('death-screen');
       if (deathScreen) {
           deathScreen.style.display = 'flex';
+          const h1 = deathScreen.querySelector('h1');
+          if (h1) h1.innerText = "YOU DIED";
+          
+          // Show default death screen stats and hide victory stats
           const deathLevel = document.getElementById('death-level');
           const deathScore = document.getElementById('death-score');
-          if (deathLevel) deathLevel.innerText = `${this.depth}m`;
-          if (deathScore) deathScore.innerText = this.score.toString();
+          if (deathLevel) {
+              deathLevel.innerText = `${this.depth}m`;
+              deathLevel.parentElement!.style.display = 'block';
+          }
+          if (deathScore) {
+              deathScore.innerText = this.score.toString();
+              deathScore.parentElement!.style.display = 'block';
+          }
+          
+          // Remove victory stats if any
+          const victoryStats = deathScreen.querySelector('.victory-stats');
+          if (victoryStats) {
+              victoryStats.remove();
+          }
       }
   }
 
   draw() {
-    const maxDepth = 1000; 
-    const t = Math.min(1, this.depth / maxDepth);
-    
-    // Surface color (Much lighter): rgb(0, 150, 220)
-    // Deep color: rgb(0, 0, 0)
-    const startR = 0, startG = 150, startB = 220;
-    const endR = 0, endG = 0, endB = 0;
+    // Boss fight has different background
+    if (this.isBossFight) {
+        // Draw black background first
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw gradient from blue to black
+        if (this.arenaBounds) {
+            const arenaScreenX = this.arenaBounds.minX - this.camera.x;
+            const arenaScreenY = this.arenaBounds.minY - this.camera.y;
+            const arenaWidth = this.arenaBounds.maxX - this.arenaBounds.minX;
+            const arenaHeight = this.arenaBounds.maxY - this.arenaBounds.minY;
+            
+            // Create radial gradient from center of arena
+            const centerScreenX = (this.arenaBounds.minX + this.arenaBounds.maxX) / 2 - this.camera.x;
+            const centerScreenY = (this.arenaBounds.minY + this.arenaBounds.maxY) / 2 - this.camera.y;
+            const maxDist = Math.max(arenaWidth, arenaHeight) / 2;
+            
+            const gradient = this.ctx.createRadialGradient(
+                centerScreenX, centerScreenY, 0,
+                centerScreenX, centerScreenY, maxDist
+            );
+            gradient.addColorStop(0, '#000033'); // Dark blue at center
+            gradient.addColorStop(0.7, '#000022'); // Darker blue
+            gradient.addColorStop(1, '#000000'); // Black at edges
+            
+            this.ctx.fillStyle = gradient;
+            // Fill a larger area to cover gradient fade
+            const padding = maxDist;
+            this.ctx.fillRect(
+                arenaScreenX - padding, 
+                arenaScreenY - padding, 
+                arenaWidth + padding * 2, 
+                arenaHeight + padding * 2
+            );
+        }
+    } else {
+        const maxDepth = 1000; 
+        const t = Math.min(1, this.depth / maxDepth);
+        
+        // Surface color (Much lighter): rgb(0, 150, 220)
+        // Deep color: rgb(0, 0, 0)
+        const startR = 0, startG = 150, startB = 220;
+        const endR = 0, endG = 0, endB = 0;
 
-    const r = Math.floor(startR + (endR - startR) * t);
-    const g = Math.floor(startG + (endG - startG) * t);
-    const b = Math.floor(startB + (endB - startB) * t);
-    
-    this.ctx.fillStyle = `rgb(${r}, ${g}, ${b})`; 
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        const r = Math.floor(startR + (endR - startR) * t);
+        const g = Math.floor(startG + (endG - startG) * t);
+        const b = Math.floor(startB + (endB - startB) * t);
+        
+        this.ctx.fillStyle = `rgb(${r}, ${g}, ${b})`; 
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
 
     this.ctx.save();
     this.ctx.translate(-this.camera.x, -this.camera.y);
 
-    this.drawBackgroundGrid();
-    
-    // Draw Particles
-    this.drawParticles(this.ctx);
-    
-    // Draw Surface (Sky) if near top
-    if (this.camera.y < 50) {
+    // Don't draw background/particles during boss fight
+    if (!this.isBossFight) {
+        this.drawBackgroundGrid();
+        
+        // Draw Particles
+        this.drawParticles(this.ctx);
+        
+        // Draw Surface (Sky) if near top
+        if (this.camera.y < 50) {
         const surfaceY = 0;
         const waveHeight = 10;
         const waveLength = 50;
@@ -910,6 +1320,7 @@ export class Game {
              else this.ctx.lineTo(x, y);
         }
         this.ctx.stroke();
+        }
     }
 
     // Draw Game Entities
@@ -919,30 +1330,49 @@ export class Game {
     this.explosions.forEach(e => e.draw(this.ctx));
     this.enemies.forEach(e => e.draw(this.ctx));
     if (this.kraken && this.isBossFight) this.kraken.draw(this.ctx);
+    
+    // Draw obstacles (boss fight only)
+    if (this.isBossFight) {
+        this.obstacles.forEach(obs => obs.draw(this.ctx));
+    }
     this.projectiles.forEach(p => p.draw(this.ctx));
     this.player.draw(this.ctx);
     
-    // Draw Sea Floor
-    this.drawSeaFloor(this.ctx);
+    // Draw Sea Floor (only if not boss fight)
+    if (!this.isBossFight) {
+        this.drawSeaFloor(this.ctx);
+    }
 
     this.ctx.restore();
     
     // UI Overlay Messages
-    if (this.depth > 900 && !this.isBossFight) {
+    if (this.depth >= 982 && !this.isBossFight) {
         this.ctx.save();
-        this.ctx.fillStyle = 'white';
         this.ctx.font = 'bold 30px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.shadowColor = 'black';
         this.ctx.shadowBlur = 5;
-        this.ctx.fillText("Search the seabed! Find the abyssal trench!", this.canvas.width/2, this.canvas.height - 100);
         
         if (this.trenchX !== null) {
              const dist = Math.abs(this.player.position.x - this.trenchX);
-             if (dist > 7500) { // 300m * 25 = 7500
-                 this.ctx.fillText("The water goes no deeper this way!", this.canvas.width/2, this.canvas.height - 60);
+             const distMeters = dist / 25; // Convert pixels to meters
+             
+             // Check if going wrong way (more than 300m away)
+             if (distMeters > 300) {
+                 this.ctx.fillStyle = 'red';
+                 this.ctx.fillText("The sonar shows only flat in this direction!", this.canvas.width/2, this.canvas.height - 60);
+             }
+             // Check if going right way and within 100m
+             else if (distMeters <= 100) {
+                 this.ctx.fillStyle = 'green';
+                 this.ctx.fillText("The sonar is pinging something very large ahead!", this.canvas.width/2, this.canvas.height - 60);
              }
         }
+        
+        // Main message
+        this.ctx.fillStyle = 'white';
+        this.ctx.fillText("Search the seabed! Find the abyssal trench!", this.canvas.width/2, this.canvas.height - 100);
+        
         this.ctx.restore();
     }
   }
