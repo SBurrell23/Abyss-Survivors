@@ -1196,7 +1196,12 @@ export class Game {
           const pct = (this.player.hp / this.player.maxHp) * 100;
           hpBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
           hpText.innerText = `${Math.ceil(this.player.hp)} / ${this.player.maxHp}`;
-          hpBar.style.backgroundColor = '#ff4444';
+          // Flash bright red when taking damage
+          if (this.player.damageFlashTimer > 0) {
+              hpBar.style.backgroundColor = '#ff0000'; // Bright red
+          } else {
+              hpBar.style.backgroundColor = '#ff4444'; // Normal red
+          }
       }
       
       // Boss HP Bar

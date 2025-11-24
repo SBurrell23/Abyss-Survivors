@@ -46,6 +46,7 @@ export class Player {
   
   depthChargeTimer: number = 0;
   plasmaTimer: number = 0; // For damage tick
+  damageFlashTimer: number = 0; // Flash HP bar when taking damage
 
   vampireCounter: number = 0; // Track kills for vampire
   
@@ -78,9 +79,14 @@ export class Player {
         this.shootCooldown = this.attackInterval;
     }
     
-    // Ability Timers
-    this.updateAbilities(dt);
-  }
+     // Ability Timers
+     this.updateAbilities(dt);
+     
+     // Update damage flash timer for HP bar
+     if (this.damageFlashTimer > 0) {
+         this.damageFlashTimer -= dt;
+     }
+   }
   
   updateAbilities(dt: number) {
       // Depth Charge (Every 3s)
@@ -275,6 +281,10 @@ export class Player {
     // Apply Damage Reduction
     const reducedAmount = amount * (1 - this.damageReduction);
     this.hp -= reducedAmount;
+    
+    // Trigger damage flash
+    this.damageFlashTimer = 0.3; // Flash for 0.3 seconds
+    
     if (this.hp <= 0) {
         this.hp = 0;
         this.game.gameOver();
