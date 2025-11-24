@@ -216,16 +216,6 @@
     "maxRank": 8
   },
   {
-    "id": "helix_rounds",
-    "name": "Helix Rounds",
-    "description": "Torpedoes move in a wide wave",
-    "rarity": "common",
-    "icon": "🧬",
-    "type": "special",
-    "effect": "unlock_helix",
-    "maxRank": 8
-  },
-  {
     "id": "knockback_ammo",
     "name": "Knockback Ammo",
     "description": "Torpedoes push enemies away",

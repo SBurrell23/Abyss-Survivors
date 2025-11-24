@@ -156,9 +156,6 @@ export class UpgradeManager {
           case 'unlock_rear_guns':
               p.rearGunsLevel++;
               break;
-          case 'unlock_helix':
-              p.helixEnabled = true;
-              break;
           case 'increment_knockback':
               p.knockbackStrength += 100; // Pixels per second impulse
               break;

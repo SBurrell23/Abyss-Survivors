@@ -19,7 +19,6 @@ export class Projectile {
   isCritical: boolean = false;
   
   // Newest properties
-  isHelix: boolean = false;
   isGiant: boolean = false;
   knockbackForce: number = 0;
   freezeDuration: number = 0;
@@ -68,24 +67,8 @@ export class Projectile {
         }
     }
 
-    if (this.isHelix) {
-        // Add sine wave motion perpendicular to velocity
-        const waveFreq = 10;
-        const waveAmp = 40; // Reduced from 200
-        
-        const velocityDir = this.velocity.normalize();
-        const perp = new Vector2(-velocityDir.y, velocityDir.x);
-        
-        // Use SIN instead of COS so it starts at 0 lateral velocity (straight)
-        const oscVelocity = waveFreq * waveAmp * Math.sin(this.timeAlive * waveFreq);
-        
-        this.position.x += this.velocity.x * dt + perp.x * oscVelocity * dt;
-        this.position.y += this.velocity.y * dt + perp.y * oscVelocity * dt;
-        
-    } else {
-        this.position.x += this.velocity.x * dt;
-        this.position.y += this.velocity.y * dt;
-    }
+    this.position.x += this.velocity.x * dt;
+    this.position.y += this.velocity.y * dt;
     
     this.duration -= dt;
     if (this.duration <= 0) {

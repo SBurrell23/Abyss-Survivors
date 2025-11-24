@@ -31,7 +31,6 @@ export class Player {
   // Newest Stats
   scatterLevel: number = 0;
   rearGunsLevel: number = 0;
-  helixEnabled: boolean = false;
   knockbackStrength: number = 0;
   freezeChance: number = 0;
   giantTorpedoLevel: number = 0;
@@ -205,7 +204,6 @@ export class Player {
       projectile.duration *= this.projectileRangeMult;
       
       // New Props
-      projectile.isHelix = this.helixEnabled;
       projectile.knockbackForce = this.knockbackStrength;
       if (Math.random() < this.freezeChance) {
           projectile.freezeDuration = 3.0; // 3s freeze
@@ -225,6 +223,7 @@ export class Player {
       
       this.game.projectiles.push(projectile);
   }
+  
 
 
   draw(ctx: CanvasRenderingContext2D) {
