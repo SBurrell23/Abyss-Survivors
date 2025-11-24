@@ -1,11 +1,12 @@
 import { Game } from '../Game';
 import { Vector2 } from '../utils';
 import { Projectile } from './Projectile';
+import { SpriteFactory } from '../graphics/SpriteFactory';
 
 export class OrbitProjectile extends Projectile {
   angle: number = 0;
   orbitRadius: number = 60;
-  orbitSpeed: number = 3;
+  orbitSpeed: number = 4.5; // 50% faster (was 3)
   
   isRecovering: boolean = false;
   recoveryTime: number = 2.0;
@@ -72,9 +73,12 @@ export class OrbitProjectile extends Projectile {
     ctx.save();
     ctx.translate(this.position.x, this.position.y);
     
-    // Change color if currently hitting something (or recent tick)
-    // We can check if tickTimers is not empty? Or if any timer is near max?
-    // Let's check if we dealt damage recently
+    // Calculate orbit direction (tangent to the circle, perpendicular to radius)
+    // The torpedo should point in the direction it's moving around the circle
+    const orbitDirection = this.angle + Math.PI / 2; // Perpendicular to radius
+    ctx.rotate(orbitDirection);
+    
+    // Check if currently hitting something (for visual feedback)
     let isHitting = false;
     for(const t of this.tickTimers.values()) {
         if (t > this.tickInterval - 0.1) {
@@ -83,17 +87,17 @@ export class OrbitProjectile extends Projectile {
         }
     }
 
-    ctx.fillStyle = isHitting ? '#ffffff' : '#00ffaa'; // Flash white on hit
-    ctx.beginPath();
-    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-    ctx.fill();
+    // Use torpedo sprite instead of plain circle
+    const sprite = SpriteFactory.getSprite('projectile_torpedo');
+    const scale = 3; // Increased from 2 to make them thicker and longer
     
-    // Glow effect
+    // Add glow effect when hitting
     if (isHitting) {
         ctx.shadowBlur = 10;
         ctx.shadowColor = '#00ffaa';
-        ctx.fill();
     }
+    
+    ctx.drawImage(sprite, -sprite.width * scale / 2, -sprite.height * scale / 2, sprite.width * scale, sprite.height * scale);
 
     ctx.restore();
   }

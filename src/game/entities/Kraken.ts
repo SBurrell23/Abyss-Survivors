@@ -62,9 +62,9 @@ export class Kraken {
         });
         
         // Spawn minions much more frequently in later phases
-        const spawnCooldown = this.phase === 1 ? 10.0 : 
-                             this.phase === 2 ? 4.0 : 
-                             2.5; // Much more frequent
+        const spawnCooldown = this.phase === 1 ? 8.0 : 
+                             this.phase === 2 ? 3.0 : 
+                             1.8; // Slightly increased spawn rate
         this.spawnTimer -= dt;
         if (this.spawnTimer <= 0) {
             this.spawnMinions();
@@ -93,22 +93,38 @@ export class Kraken {
         
         const monsters = monstersData as MonsterStats[];
         const arenaBounds = this.game.arenaBounds;
+        const minDistanceFromPlayer = 800; // Minimum distance from player in pixels
         
         for(let i=0; i<minionCount; i++) {
-            let pos: Vector2;
+            let pos: Vector2 = new Vector2(0, 0); // Initialize to avoid TS error
             let attempts = 0;
+            let validPos = false;
             
-            // Spawn outside arena bounds
-            do {
-                const angle = Math.random() * Math.PI * 2;
-                // Spawn far enough outside the arena
-                const dist = 400 + Math.random() * 300; // 400-700 pixels from kraken
-                pos = this.position.add(new Vector2(Math.cos(angle)*dist, Math.sin(angle)*dist));
+            // Spawn outside arena bounds and away from player
+            // Try to spawn at a good distance from player first
+            while (!validPos && attempts < 100) {
+                // Try spawning at a distance from player (preferred method)
+                const playerAngle = Math.random() * Math.PI * 2;
+                const playerDist = minDistanceFromPlayer + Math.random() * 400; // 800-1200 pixels from player
+                pos = this.game.player.position.add(new Vector2(Math.cos(playerAngle) * playerDist, Math.sin(playerAngle) * playerDist));
+                
+                // Check if position is valid
+                const tooCloseToPlayer = pos.distanceTo(this.game.player.position) < minDistanceFromPlayer;
+                const insideArena = arenaBounds && 
+                                   pos.x >= arenaBounds.minX && pos.x <= arenaBounds.maxX &&
+                                   pos.y >= arenaBounds.minY && pos.y <= arenaBounds.maxY;
+                
+                if (!tooCloseToPlayer && !insideArena) {
+                    validPos = true;
+                }
+                
                 attempts++;
-            } while (arenaBounds && 
-                     pos.x >= arenaBounds.minX && pos.x <= arenaBounds.maxX &&
-                     pos.y >= arenaBounds.minY && pos.y <= arenaBounds.maxY &&
-                     attempts < 20); // Safety limit
+            }
+            
+            // If we couldn't find a valid position, skip this minion
+            if (!validPos) {
+                continue;
+            }
             
             // Choose monster type based on phase
             let monsterType: MonsterStats;

@@ -36,11 +36,34 @@ export class UpgradeManager {
   getRandomUpgrades(count: number = 4): UpgradeDef[] {
     const result: UpgradeDef[] = [];
     
+    // Check if all common upgrades are at max rank
+    const allCommonUpgrades = this.upgrades.filter(u => u.rarity === 'common');
+    const allCommonsMaxed = allCommonUpgrades.every(u => {
+      const playerUpgrade = this.playerUpgrades.get(u.id);
+      // If upgrade has maxRank, check if it's reached
+      if (u.maxRank) {
+        if (playerUpgrade) {
+          return playerUpgrade.count >= u.maxRank;
+        }
+        return false; // Not acquired yet, so not maxed
+      }
+      // If no maxRank, consider it as "always available" (shouldn't happen but safety check)
+      return false;
+    });
+    
+    // Track how many rare/legendary upgrades we've selected
+    let rareLegendaryCount = 0;
+    const maxRareLegendary = allCommonsMaxed ? count : 1; // Allow multiple only if all commons maxed
+    
     while (result.length < count) {
       const rand = Math.random();
       let rarity = 'common';
-      if (rand > 0.95) rarity = 'legendary';
-      else if (rand > 0.70) rarity = 'rare';
+      
+      // Only allow rare/legendary if we haven't hit the limit
+      if (rareLegendaryCount < maxRareLegendary) {
+        if (rand > 0.95) rarity = 'legendary';
+        else if (rand > 0.70) rarity = 'rare';
+      }
 
       // Filter out upgrades that have reached max rank
       const candidates = this.upgrades.filter(u => {
@@ -56,8 +79,14 @@ export class UpgradeManager {
       });
       
       if (candidates.length === 0) {
-        // If no candidates for this rarity, try any rarity
+        // If no candidates for this rarity, try any available rarity
+        // But respect the rare/legendary limit
         const allCandidates = this.upgrades.filter(u => {
+          // Skip rare/legendary if we've hit the limit
+          if ((u.rarity === 'rare' || u.rarity === 'legendary') && rareLegendaryCount >= maxRareLegendary) {
+            return false;
+          }
+          
           const playerUpgrade = this.playerUpgrades.get(u.id);
           if (playerUpgrade && u.maxRank) {
             return playerUpgrade.count < u.maxRank;
@@ -70,6 +99,9 @@ export class UpgradeManager {
         const pick = allCandidates[Math.floor(Math.random() * allCandidates.length)];
         if (!result.includes(pick)) {
           result.push(pick);
+          if (pick.rarity === 'rare' || pick.rarity === 'legendary') {
+            rareLegendaryCount++;
+          }
         }
         continue;
       }
@@ -78,6 +110,9 @@ export class UpgradeManager {
       
       if (!result.includes(pick)) {
         result.push(pick);
+        if (pick.rarity === 'rare' || pick.rarity === 'legendary') {
+          rareLegendaryCount++;
+        }
       }
     }
     return result;

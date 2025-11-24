@@ -83,12 +83,12 @@ export class Player {
   }
   
   updateAbilities(dt: number) {
-      // Depth Charge (Every 2s)
+      // Depth Charge (Every 3s)
       if (this.depthChargeLevel > 0) {
           this.depthChargeTimer -= dt;
           if (this.depthChargeTimer <= 0) {
               this.spawnDepthCharge();
-              this.depthChargeTimer = 2.0;
+              this.depthChargeTimer = 3.0; // Every 3 seconds
           }
       }
       

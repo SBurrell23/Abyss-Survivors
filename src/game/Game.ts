@@ -1257,7 +1257,7 @@ export class Game {
       if (deathScreen) {
           deathScreen.style.display = 'flex';
           const h1 = deathScreen.querySelector('h1');
-          if (h1) h1.innerText = "YOU DIED";
+          if (h1) h1.innerText = "Your Sub Imploded!";
           
           // Show default death screen stats and hide victory stats
           const deathLevel = document.getElementById('death-level');

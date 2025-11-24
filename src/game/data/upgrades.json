@@ -122,7 +122,7 @@
   {
     "id": "depth_charge",
     "name": "Depth Charge",
-    "description": "Fires a heavy bomb downwards",
+    "description": "Drops a heavy bomb downwards every 3 seconds",
     "rarity": "rare",
     "icon": "⚓",
     "type": "special",
