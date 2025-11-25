@@ -22,11 +22,13 @@ export class Player {
   homingStrength: number = 0; // 0 to 1
   projectileSpeedMult: number = 1.0;
   projectileRangeMult: number = 1.0;
+  projectileSizeMult: number = 1.0; // Multiplier for projectile size
   critChance: number = 0; // 0 to 1
   vampireHeal: number = 0; // HP per 50 kills
   damageReduction: number = 0; // 0 to 1
   deepPressure: boolean = false;
-  scavengerChance: number = 0.01; // Base 1% chance, max 5% at rank 4
+  scavengerChance: number = 0; // Starts at 0, only works with upgrade ranks
+  xpMultiplier: number = 1.0; // XP gain multiplier
   
   // Newest Stats
   scatterLevel: number = 0;
@@ -39,6 +41,7 @@ export class Player {
   // Ability Levels
   plasmaFieldLevel: number = 0;
   depthChargeLevel: number = 0;
+  sonarPulseLevel: number = 0;
 
   // Timers
   shootCooldown: number = 0;
@@ -47,6 +50,7 @@ export class Player {
   depthChargeTimer: number = 0;
   plasmaTimer: number = 0; // For damage tick
   plasmaPulseTimer: number = 0; // For visual pulse when dealing damage
+  sonarPulseTimer: number = 0; // Timer for sonar pulse
   damageFlashTimer: number = 0; // Flash HP bar when taking damage
 
   vampireCounter: number = 0; // Track kills for vampire
@@ -99,6 +103,15 @@ export class Player {
           }
       }
       
+      // Sonar Pulse (Every 7s)
+      if (this.sonarPulseLevel > 0) {
+          this.sonarPulseTimer -= dt;
+          if (this.sonarPulseTimer <= 0) {
+              this.triggerSonarPulse();
+              this.sonarPulseTimer = 7.0; // Every 7 seconds
+          }
+      }
+      
       // Plasma Field (Continuous, tick every 0.5s)
       if (this.plasmaFieldLevel > 0) {
           this.plasmaTimer -= dt;
@@ -146,6 +159,17 @@ export class Player {
       if (didDamage) {
           this.plasmaPulseTimer = 0.15; // Pulse duration
       }
+  }
+  
+  triggerSonarPulse() {
+      // Create expanding pulse that damages enemies when it reaches them
+      // Base damage increases with level, but decreases with distance
+      const baseDamage = 3 + (this.sonarPulseLevel * 2); // 3-19 damage at max level (8 ranks)
+      const maxRadius = Math.max(this.game.canvas.width, this.game.canvas.height) * 1.5; // Cover entire screen
+      
+      // Visual effect - create expanding pulse animation
+      // Damage will be calculated as the pulse expands in the update loop
+      this.game.createSonarPulseVisual(this.position, maxRadius, baseDamage, this.sonarPulseLevel);
   }
 
   shootAtMouse() {
@@ -217,9 +241,18 @@ export class Player {
       let finalDamage = this.damage;
       
       // Deep Pressure Logic
+      // 0% bonus at 0 meters, 50% bonus at 1000 meters (or in Kraken arena)
       if (this.deepPressure) {
-          const bonus = 1 + (this.game.depth / 50) * 0.01;
-          finalDamage *= bonus;
+          let depthBonus = 0;
+          if (this.game.isBossFight) {
+              // In Kraken arena, treat as max depth (1000m = 50% bonus)
+              depthBonus = 0.5;
+          } else {
+              // Linear scaling: 0% at 0m, 50% at 1000m
+              const depthMeters = this.game.depth;
+              depthBonus = Math.min(0.5, depthMeters / 1000 * 0.5);
+          }
+          finalDamage *= (1 + depthBonus);
       }
       
       // Critical Hit
@@ -247,12 +280,15 @@ export class Player {
           projectile.isGiant = true;
           projectile.damage *= 5; // Massive damage
           projectile.pierce += 100; // Pierce everything
-          projectile.radius *= 3; 
+          projectile.radius *= 1.75; // Giant torpedoes are 5x bigger
           projectile.knockbackForce += 500; // Massive push
           projectile.explosionRadius += 100;
           
           // Screen shake when giant torpedo is fired
-          this.game.addScreenShake(12); // Same amount as current explosion shake
+          this.game.addScreenShake(15); // Same amount as current explosion shake
+      } else {
+          // Apply projectile size multiplier (but not to giant torpedoes, they have their own scaling)
+          projectile.radius *= this.projectileSizeMult;
       }
       
       this.game.projectiles.push(projectile);

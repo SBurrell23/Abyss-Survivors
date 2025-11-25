@@ -104,7 +104,7 @@
     "name": "Homing Tech",
     "description": "Torpedoes slightly track enemies",
     "rarity": "legendary",
-    "icon": "📡",
+    "icon": "🔭",
     "type": "special",
     "effect": "increment_homing",
     "maxRank": 8
@@ -124,7 +124,7 @@
     "name": "Depth Charge",
     "description": "Drops a heavy bomb downwards every 3 seconds",
     "rarity": "rare",
-    "icon": "⚓",
+    "icon": "💣",
     "type": "special",
     "effect": "unlock_depth_charge",
     "maxRank": 8
@@ -176,7 +176,7 @@
   {
     "id": "scavenger_protocol",
     "name": "Scavenger Protocol",
-    "description": "1% Chance for enemies to drop health (+1% per rank)",
+    "description": "1% chance for enemies to drop a health pack",
     "rarity": "common",
     "icon": "💊",
     "type": "stat",
@@ -188,8 +188,8 @@
   {
     "id": "deep_pressure",
     "name": "Deep Pressure",
-    "description": "Damage increases with depth",
-    "rarity": "legendary",
+    "description": "Damage increases with depth (50% more at 1000m)",
+    "rarity": "rare",
     "icon": "⏬",
     "type": "special",
     "effect": "unlock_deep_pressure",
@@ -244,5 +244,39 @@
     "type": "special",
     "effect": "unlock_giant",
     "maxRank": 5
+  },
+  {
+    "id": "xp_multiplier",
+    "name": "XP Multiplier",
+    "description": "Increases XP gained by 10%",
+    "rarity": "common",
+    "icon": "⭐",
+    "type": "stat",
+    "stat": "xpMultiplier",
+    "value": 1.1,
+    "op": "multiply",
+    "maxRank": 10
+  },
+  {
+    "id": "projectile_size",
+    "name": "Thick Torpedoes",
+    "description": "Increases torpedo size by 10%",
+    "rarity": "common",
+    "icon": "📏",
+    "type": "stat",
+    "stat": "projectileSizeMult",
+    "value": 1.1,
+    "op": "multiply",
+    "maxRank": 7
+  },
+  {
+    "id": "sonar_pulse",
+    "name": "Sonar Pulse",
+    "description": "Pulse damages all enemies every 7 seconds",
+    "rarity": "legendary",
+    "icon": "📡",
+    "type": "special",
+    "effect": "unlock_sonar_pulse",
+    "maxRank": 8
   }
 ]

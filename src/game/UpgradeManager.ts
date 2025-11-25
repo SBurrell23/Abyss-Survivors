@@ -33,7 +33,7 @@ export class UpgradeManager {
     this.upgrades = upgradesData as unknown as UpgradeDef[];
   }
 
-  getRandomUpgrades(count: number = 4): UpgradeDef[] {
+  getRandomUpgrades(count: number = 5, depth: number = 0): UpgradeDef[] {
     const result: UpgradeDef[] = [];
     
     // Check if all common upgrades are at max rank
@@ -53,14 +53,25 @@ export class UpgradeManager {
     
     // Track how many rare/legendary upgrades we've selected
     let rareLegendaryCount = 0;
-    const maxRareLegendary = allCommonsMaxed ? count : 1; // Allow multiple only if all commons maxed
+    let legendaryCount = 0;
+    const maxRareLegendary = allCommonsMaxed ? count : (depth > 250 ? 1 : 1); // Guarantee at least 1 if depth > 250
+    
+    // Depth-based guarantees
+    const guaranteeRareOrLegendary = depth > 250; // At least one purple or orange if depth > 250m
+    const guaranteeLegendary = depth > 750; // At least one orange if depth > 750m
     
     while (result.length < count) {
       const rand = Math.random();
       let rarity = 'common';
       
-      // Only allow rare/legendary if we haven't hit the limit
-      if (rareLegendaryCount < maxRareLegendary) {
+      // Force rare/legendary if we need to guarantee one
+      if (guaranteeLegendary && legendaryCount === 0 && result.length === count - 1) {
+        rarity = 'legendary'; // Force legendary on last slot if needed
+      } else if (guaranteeRareOrLegendary && rareLegendaryCount === 0 && result.length === count - 1) {
+        // Force rare or legendary on last slot if we haven't gotten one yet
+        rarity = Math.random() > 0.5 ? 'legendary' : 'rare';
+      } else if (rareLegendaryCount < maxRareLegendary) {
+        // Normal random selection
         if (rand > 0.95) rarity = 'legendary';
         else if (rand > 0.70) rarity = 'rare';
       }
@@ -102,6 +113,9 @@ export class UpgradeManager {
           if (pick.rarity === 'rare' || pick.rarity === 'legendary') {
             rareLegendaryCount++;
           }
+          if (pick.rarity === 'legendary') {
+            legendaryCount++;
+          }
         }
         continue;
       }
@@ -113,8 +127,61 @@ export class UpgradeManager {
         if (pick.rarity === 'rare' || pick.rarity === 'legendary') {
           rareLegendaryCount++;
         }
+        if (pick.rarity === 'legendary') {
+          legendaryCount++;
+        }
       }
     }
+    
+    // Final check: ensure guarantees are met
+    if (guaranteeLegendary && legendaryCount === 0) {
+      // Replace a random non-legendary upgrade with a legendary
+      const legendaryCandidates = this.upgrades.filter(u => {
+        if (u.rarity !== 'legendary') return false;
+        const playerUpgrade = this.playerUpgrades.get(u.id);
+        if (playerUpgrade && u.maxRank) {
+          return playerUpgrade.count < u.maxRank;
+        }
+        return true;
+      });
+      
+      if (legendaryCandidates.length > 0) {
+        const legendaryPick = legendaryCandidates[Math.floor(Math.random() * legendaryCandidates.length)];
+        // Replace first non-legendary if we have one
+        const replaceIndex = result.findIndex(u => u.rarity !== 'legendary');
+        if (replaceIndex >= 0 && !result.includes(legendaryPick)) {
+          if (result[replaceIndex].rarity === 'rare' || result[replaceIndex].rarity === 'legendary') {
+            rareLegendaryCount--; // Adjust count
+          }
+          result[replaceIndex] = legendaryPick;
+          legendaryCount++;
+          rareLegendaryCount++;
+        }
+      }
+    } else if (guaranteeRareOrLegendary && rareLegendaryCount === 0) {
+      // Replace a random common upgrade with a rare or legendary
+      const rareLegendaryCandidates = this.upgrades.filter(u => {
+        if (u.rarity !== 'rare' && u.rarity !== 'legendary') return false;
+        const playerUpgrade = this.playerUpgrades.get(u.id);
+        if (playerUpgrade && u.maxRank) {
+          return playerUpgrade.count < u.maxRank;
+        }
+        return true;
+      });
+      
+      if (rareLegendaryCandidates.length > 0) {
+        const rareLegendaryPick = rareLegendaryCandidates[Math.floor(Math.random() * rareLegendaryCandidates.length)];
+        const replaceIndex = result.findIndex(u => u.rarity === 'common');
+        if (replaceIndex >= 0 && !result.includes(rareLegendaryPick)) {
+          result[replaceIndex] = rareLegendaryPick;
+          rareLegendaryCount++;
+          if (rareLegendaryPick.rarity === 'legendary') {
+            legendaryCount++;
+          }
+        }
+      }
+    }
+    
     return result;
   }
 
@@ -200,8 +267,11 @@ export class UpgradeManager {
           case 'unlock_giant':
               p.giantTorpedoLevel++;
               break;
+          case 'unlock_sonar_pulse':
+              p.sonarPulseLevel++;
+              break;
       }
-    }
+  }
   }
 
   getInventory(): PlayerUpgrade[] {

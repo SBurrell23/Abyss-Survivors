@@ -169,7 +169,9 @@ export class Projectile {
         ctx.shadowBlur = 5;
     }
     
-    ctx.drawImage(sprite, -sprite.width * scale / 2, -sprite.height * scale / 2, sprite.width * scale, sprite.height * scale);
+    // Apply size multiplier to sprite scale
+    const finalScale = scale * (this.radius / 4); // Base radius is 4, so this scales with radius
+    ctx.drawImage(sprite, -sprite.width * finalScale / 2, -sprite.height * finalScale / 2, sprite.width * finalScale, sprite.height * finalScale);
 
     ctx.restore();
   }

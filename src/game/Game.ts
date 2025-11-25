@@ -324,6 +324,38 @@ export class Game {
       this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
   }
   
+  createSonarPulseVisual(center: Vector2, maxRadius: number, baseDamage: number, level: number) {
+      // Create visual expanding pulse effect
+      // Store pulse data for drawing and damage calculation
+      if (!this.sonarPulses) {
+          this.sonarPulses = [];
+      }
+      this.sonarPulses.push({
+          center: new Vector2(center.x, center.y),
+          radius: 0,
+          maxRadius: maxRadius,
+          lifetime: 5.0, // Pulse expands over 5 seconds (very slow)
+          timeAlive: 0,
+          baseDamage: baseDamage,
+          hitEnemies: new Set(), // Track which enemies have been hit
+          hitKraken: false // Track if kraken has been hit
+      });
+      
+      // Play ping sound
+      this.soundManager.playSonarPing();
+  }
+  
+  sonarPulses: Array<{
+      center: Vector2, 
+      radius: number, 
+      maxRadius: number, 
+      lifetime: number, 
+      timeAlive: number,
+      baseDamage: number,
+      hitEnemies: Set<any>,
+      hitKraken: boolean
+  }> = [];
+  
   initParticleDefs() {
       for (let i = 0; i < 100; i++) {
           this.particleDefs.push({
@@ -727,6 +759,59 @@ export class Game {
     this.healthPacks.forEach(hp => hp.update(dt));
     this.healthPacks = this.healthPacks.filter(hp => hp.active);
     
+    // Update Sonar Pulses
+    if (this.sonarPulses) {
+        this.sonarPulses.forEach(pulse => {
+            pulse.timeAlive += dt;
+            const progress = pulse.timeAlive / pulse.lifetime;
+            const oldRadius = pulse.radius;
+            pulse.radius = pulse.maxRadius * progress;
+            
+            // Damage enemies when the pulse circle reaches them
+            // Only check enemies that haven't been hit yet
+            this.enemies.forEach(e => {
+                if (pulse.hitEnemies.has(e)) return; // Already hit
+                
+                const dist = pulse.center.distanceTo(e.position);
+                const enemyRadius = e.radius;
+                
+                // Check if pulse has reached this enemy (pulse radius >= distance to enemy center - enemy radius)
+                // And it wasn't reached in the previous frame
+                if (pulse.radius >= dist - enemyRadius && oldRadius < dist - enemyRadius) {
+                    // Calculate damage based on distance (decreases with distance)
+                    const damageMultiplier = 1 - (dist / pulse.maxRadius);
+                    let damage = pulse.baseDamage * damageMultiplier;
+                    
+                    // At max level (baseDamage >= 19), ensure minimum damage is enough to kill guppies (5 HP)
+                    if (pulse.baseDamage >= 19) {
+                        damage = Math.max(damage, 5); // Minimum 5 damage at max level
+                    }
+                    
+                    if (damage > 0.1) {
+                        e.takeDamage(damage);
+                        pulse.hitEnemies.add(e);
+                    }
+                }
+            });
+            
+            // Damage Kraken during boss fight
+            if (this.isBossFight && this.kraken && !pulse.hitKraken) {
+                const dist = pulse.center.distanceTo(this.kraken.position);
+                const krakenRadius = this.kraken.radius;
+                
+                if (pulse.radius >= dist - krakenRadius && oldRadius < dist - krakenRadius) {
+                    const damageMultiplier = 1 - (dist / pulse.maxRadius);
+                    const damage = pulse.baseDamage * damageMultiplier;
+                    if (damage > 0.1) {
+                        this.kraken.takeDamage(damage);
+                        pulse.hitKraken = true;
+                    }
+                }
+            }
+        });
+        this.sonarPulses = this.sonarPulses.filter(p => p.timeAlive < p.lifetime);
+    }
+    
     // Update Treasure Chests
     this.treasureChests.forEach(c => {
         // Simple logic if needed
@@ -937,11 +1022,12 @@ export class Game {
       // Calculate Reward
       let rarity: 'common' | 'rare' | 'legendary' = 'common';
       // Zones: Rare 42.5-57.5? No, CSS says: Rare width 15% at 42.5%, Legendary width 5% at 47.5%
-      // Rare: 0.425 to 0.575
-      // Legendary: 0.475 to 0.525 (Inside Rare)
+      // Rare: 0.4475 to 0.4825 (left) and 0.5175 to 0.5525 (right) - same size as legendary on both sides
+      // Legendary: 0.4825 to 0.5175 (center)
       
-      if (this.minigameCursor >= 0.425 && this.minigameCursor <= 0.575) rarity = 'rare';
-      if (this.minigameCursor >= 0.475 && this.minigameCursor <= 0.525) rarity = 'legendary';
+      if (this.minigameCursor >= 0.4475 && this.minigameCursor <= 0.4825) rarity = 'rare'; // Left rare zone
+      if (this.minigameCursor >= 0.5175 && this.minigameCursor <= 0.5525) rarity = 'rare'; // Right rare zone
+      if (this.minigameCursor >= 0.4825 && this.minigameCursor <= 0.5175) rarity = 'legendary'; // Legendary takes priority
       
       // Play chest open sound with correct rarity
       this.soundManager.playChestOpen(rarity);
@@ -1359,7 +1445,9 @@ export class Game {
   }
 
   collectXP(amount: number) {
-      this.xp += amount;
+      // Apply XP multiplier
+      const multipliedAmount = amount * this.player.xpMultiplier;
+      this.xp += multipliedAmount;
       if (this.xp >= this.xpToNextLevel && !this.disableLevelUp) {
           this.levelUp();
       }
@@ -1382,7 +1470,7 @@ export class Game {
       menu.style.display = 'flex';
       optionsContainer.innerHTML = '';
 
-      const options = this.upgradeManager.getRandomUpgrades(4);
+      const options = this.upgradeManager.getRandomUpgrades(5, this.depth);
 
       options.forEach(opt => {
           const el = document.createElement('div');
@@ -1638,6 +1726,31 @@ export class Game {
     this.healthPacks.forEach(hp => hp.draw(this.ctx));
     this.depthCharges.forEach(d => d.draw(this.ctx));
     this.explosions.forEach(e => e.draw(this.ctx));
+    
+    // Draw Sonar Pulses
+    if (this.sonarPulses) {
+        this.sonarPulses.forEach(pulse => {
+            const progress = pulse.timeAlive / pulse.lifetime;
+            const alpha = (1 - progress) * 0.4; // Fade out as it expands
+            
+            this.ctx.save();
+            this.ctx.globalAlpha = alpha;
+            this.ctx.strokeStyle = '#00ffff';
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.arc(pulse.center.x, pulse.center.y, pulse.radius, 0, Math.PI * 2);
+            this.ctx.stroke();
+            
+            // Inner glow
+            this.ctx.globalAlpha = alpha * 0.5;
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 1;
+            this.ctx.stroke();
+            
+            this.ctx.restore();
+        });
+    }
+    
     this.enemies.forEach(e => e.draw(this.ctx));
     if (this.kraken && this.isBossFight) this.kraken.draw(this.ctx);
     

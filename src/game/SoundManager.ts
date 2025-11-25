@@ -158,6 +158,11 @@ export class SoundManager {
     playLevelUp(volume: number = 0.6) {
         this.playSound(this.getSoundUrl('AUDIO/Chimes/SFX_Chimes_Glowing_Stars_1.wav'), volume);
     }
+    
+    playSonarPing(volume: number = 0.4) {
+        // Play a ping-like sound for sonar pulse
+        this.playSound(this.getSoundUrl('AUDIO/Custom/sonar-ping-290188.mp3'), volume, 1.0);
+    }
 
     playPowerup(volume: number = 0.5) {
         const sounds = [
