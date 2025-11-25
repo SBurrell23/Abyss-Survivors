@@ -29,6 +29,7 @@ export class Enemy {
   // Status Effects
   freezeTimer: number = 0;
   knockbackVelocity: Vector2 = new Vector2(0, 0);
+  damageFlashTimer: number = 0;
 
   constructor(game: Game, x: number, y: number, stats?: MonsterStats) {
     this.game = game;
@@ -51,6 +52,11 @@ export class Enemy {
 
   update(dt: number) {
     this.animTime += dt;
+    
+    // Handle Damage Flash
+    if (this.damageFlashTimer > 0) {
+        this.damageFlashTimer -= dt;
+    }
     
     // Handle Freeze
     let currentSpeed = this.stats.speed;
@@ -146,14 +152,46 @@ export class Enemy {
 
     const sprite = SpriteFactory.getSprite(spriteName, paletteOverride);
     const scale = (this.stats.radius * 2.5) / Math.max(sprite.width, sprite.height); 
+    const spriteWidth = sprite.width * scale;
+    const spriteHeight = sprite.height * scale;
+    const spriteX = -spriteWidth / 2;
+    const spriteY = -spriteHeight / 2;
 
-    ctx.drawImage(sprite, -sprite.width * scale / 2, -sprite.height * scale / 2, sprite.width * scale, sprite.height * scale);
+    // Draw sprite normally
+    ctx.drawImage(sprite, spriteX, spriteY, spriteWidth, spriteHeight);
+
+    // Draw red flash overlay when taking damage (only on sprite pixels)
+    if (this.damageFlashTimer > 0) {
+        // Create a temporary canvas to generate a red flash mask
+        const flashCanvas = document.createElement('canvas');
+        flashCanvas.width = spriteWidth;
+        flashCanvas.height = spriteHeight;
+        const flashCtx = flashCanvas.getContext('2d')!;
+        
+        // Draw sprite to temp canvas
+        flashCtx.drawImage(sprite, 0, 0, spriteWidth, spriteHeight);
+        
+        // Use 'source-atop' to create red version - draws red only where sprite pixels exist
+        flashCtx.globalCompositeOperation = 'source-atop';
+        flashCtx.fillStyle = 'rgba(255, 100, 100, 1)'; // Light red tint
+        flashCtx.fillRect(0, 0, spriteWidth, spriteHeight);
+        
+        // Draw the red flash mask back to main canvas using 'lighter' blend mode
+        // This adds a red tint to only the sprite pixels
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.5; // Flash intensity
+        ctx.drawImage(flashCanvas, spriteX, spriteY);
+        
+        ctx.globalAlpha = 1.0;
+        ctx.globalCompositeOperation = 'source-over'; // Reset to default
+    }
 
     ctx.restore();
   }
 
   takeDamage(amount: number) {
       this.hp -= amount;
+      this.damageFlashTimer = 0.1; // Flash for 0.1 seconds
       if (this.hp <= 0) {
           this.active = false;
           this.game.score += this.stats.score;

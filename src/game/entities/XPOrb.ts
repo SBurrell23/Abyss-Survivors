@@ -21,10 +21,10 @@ export class XPOrb {
     this.radius = baseRadius * scale;
   }
   
-  // Might add magnet effect update here
+  // Magnet effect - pulls XP orbs toward player when within range
   update(dt: number) {
       const dist = this.position.distanceTo(this.game.player.position);
-      if (dist < 100) { // Magnet range
+      if (dist < this.game.player.magnetRadius) { // Use player's magnet radius (upgrades affect this)
           const dir = this.game.player.position.sub(this.position).normalize();
           this.position.x += dir.x * 300 * dt;
           this.position.y += dir.y * 300 * dt;

@@ -46,6 +46,7 @@ export class Player {
   
   depthChargeTimer: number = 0;
   plasmaTimer: number = 0; // For damage tick
+  plasmaPulseTimer: number = 0; // For visual pulse when dealing damage
   damageFlashTimer: number = 0; // Flash HP bar when taking damage
 
   vampireCounter: number = 0; // Track kills for vampire
@@ -105,6 +106,11 @@ export class Player {
               this.triggerPlasmaTick();
               this.plasmaTimer = 0.5;
           }
+          
+          // Update pulse timer
+          if (this.plasmaPulseTimer > 0) {
+              this.plasmaPulseTimer -= dt;
+          }
       }
   }
   
@@ -118,10 +124,13 @@ export class Player {
       const radius = 50 + (this.plasmaFieldLevel * 10);
       const damage = 5 * this.plasmaFieldLevel;
       
+      let didDamage = false;
+      
       // Damage enemies
       this.game.enemies.forEach(e => {
           if (this.position.distanceTo(e.position) < radius + e.radius) {
               e.takeDamage(damage);
+              didDamage = true;
           }
       });
       
@@ -129,7 +138,13 @@ export class Player {
       if (this.game.isBossFight && this.game.kraken) {
           if (this.position.distanceTo(this.game.kraken.position) < radius + this.game.kraken.radius) {
               this.game.kraken.takeDamage(damage);
+              didDamage = true;
           }
+      }
+      
+      // Trigger pulse visual effect if damage was dealt
+      if (didDamage) {
+          this.plasmaPulseTimer = 0.15; // Pulse duration
       }
   }
 
@@ -239,12 +254,27 @@ export class Player {
     
     // Draw Plasma Field
     if (this.plasmaFieldLevel > 0) {
-        const radius = 50 + (this.plasmaFieldLevel * 10);
+        const baseRadius = 50 + (this.plasmaFieldLevel * 10);
+        
+        // Apply subtle pulse when dealing damage
+        let radius = baseRadius;
+        let pulseAlpha = 0.1;
+        let strokeAlpha = 0.3;
+        
+        if (this.plasmaPulseTimer > 0) {
+            // Pulse effect: slightly expand and brighten
+            const pulseProgress = 1 - (this.plasmaPulseTimer / 0.15); // 0 to 1 as pulse fades
+            const pulseAmount = Math.sin(pulseProgress * Math.PI); // Smooth pulse curve
+            radius = baseRadius * (1 + pulseAmount * 0.08); // Expand up to 8%
+            pulseAlpha = 0.1 + (pulseAmount * 0.08); // Brighten slightly
+            strokeAlpha = 0.3 + (pulseAmount * 0.2); // Brighten stroke more
+        }
+        
         ctx.beginPath();
         ctx.arc(0, 0, radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
+        ctx.fillStyle = `rgba(0, 255, 255, ${pulseAlpha})`;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+        ctx.strokeStyle = `rgba(0, 255, 255, ${strokeAlpha})`;
         ctx.lineWidth = 2;
         ctx.stroke();
     }

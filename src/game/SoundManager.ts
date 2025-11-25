@@ -111,7 +111,7 @@ export class SoundManager {
         this.playSound(sound, volume, 1.2);
     }
 
-    playEnemyDeath(volume: number = 0.4) {
+    playEnemyDeath(volume: number = 0.26) {
         const sounds = [
             this.getSoundUrl('AUDIO/Eat_Bite/SFX_Eat_Bite_1.wav'),
             this.getSoundUrl('AUDIO/Eat_Bite/SFX_Eat_Bite_2.wav'),
