@@ -47,7 +47,7 @@ export class SoundManager {
     async playSound(path: string, volume: number = 1.0, pitch: number = 1.0, maxDuration?: number): Promise<void> {
         if (!this.audioContext) {
             await this.initAudioContext();
-            if (!this.audioContext) return;
+            if (!this.audioContext) return; 
         }
 
         // Resume audio context if suspended (required by browsers)
