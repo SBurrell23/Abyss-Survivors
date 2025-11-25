@@ -247,6 +247,52 @@ export const spriteDefinitions: Record<string, SpriteDef> = {
             "..GGGG.."
         ]
     },
+    boss_kraken: {
+        size: [32, 32],
+        palette: { 
+            '.': 'transparent', 
+            'M': '#7b1fa2', // Main Body (Purple)
+            'D': '#4a148c', // Dark Body (Shadow)
+            'L': '#ae52d4', // Light Body (Highlight)
+            'E': '#FFFF00', // Eye Sclera (Yellow)
+            'P': '#000000', // Pupil
+            'S': '#4a0072'  // Spots/Texture
+        },
+        data: [
+            "...........DDDDDDDD.............",
+            ".........DDMMMMMMMMDD...........",
+            ".......DDMMMMMMMMMMMMDD.........",
+            "......DMMMMMMMMMMMMMMMMD........",
+            ".....DMMMMMMMMMMMMMMMMMMD.......",
+            "....DMMMMMMMMMMMMMMMMMMMMD......",
+            "...DMMMMMMMMMMMMMMMMMMMMMMD.....",
+            "...DMMMMMMMMMMMMMMMMMMMMMMD.....",
+            "..DMMMMMMMMMMMMMMMMMMMMMMMMD....",
+            "..DMMMMMMMMMMMMMMMMMMMMMMMMD....",
+            ".DMMMMMMMMMMMMMMMMMMMMMMMMMMD...",
+            ".DMMMMMMMMMMMMMMMMMMMMMMMMMMD...",
+            ".DMMMMMEEEEEEMMMMEEEEEEMMMMMD...",
+            ".DMMMMEEEEEEEEMMEEEEEEEEMMMMD...",
+            ".DMMMMEPPPPPPEMMEPPPPPPEMMMMD...",
+            ".DMMMMEPPPPPPEMMEPPPPPPEMMMMD...",
+            ".DMMMMEPPPPPPEMMEPPPPPPEMMMMD...",
+            ".DMMMMEEEEEEEEMMEEEEEEEEMMMMD...",
+            ".DMMMMMEEEEEEMMMMEEEEEEMMMMMD...",
+            ".DMMMMMMMMMMMMMMMMMMMMMMMMMMD...",
+            ".DMMMMMMMMMMMMMMMMMMMMMMMMMMD...",
+            ".DMMMMMMMMMMMMMMMMMMMMMMMMMMD...",
+            "..DMMMMMMMMMMMMMMMMMMMMMMMMD....",
+            "..DMMMMMMMMMMMMMMMMMMMMMMMMD....",
+            "...DMMMMMMMMMMMMMMMMMMMMMMD.....",
+            "...DMMMMMMMMMMMMMMMMMMMMMMD.....",
+            "....DMMMMMMMMMMMMMMMMMMMMD......",
+            ".....DMMMMMMMMMMMMMMMMMMD.......",
+            "......DDMMMMMMMMMMMMMMDD........",
+            "........DDDMMMMMMMMDDD..........",
+            "...........DDDDDDDD.............",
+            "................................"
+        ]
+    },
     background_tile: {
         size: [32, 32],
         palette: { '.': '#001e36', 'D': '#00182b' },

@@ -2,6 +2,7 @@ import { Game } from '../Game';
 import { Vector2 } from '../utils';
 import { Enemy, MonsterStats } from './Enemy';
 import monstersData from '../data/monsters.json';
+import { SpriteFactory } from '../graphics/SpriteFactory';
 
 export class Kraken {
     game: Game;
@@ -180,71 +181,67 @@ export class Kraken {
             ctx.stroke();
         });
 
-        // Body - gets darker/redder as phases increase
-        const bodyColor = this.phase === 1 ? '#7b1fa2' : 
-                         this.phase === 2 ? '#9c1fa2' : '#ad1f00';
-        ctx.fillStyle = bodyColor;
-        ctx.beginPath();
-        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-        ctx.fill();
+        // Draw Body using Pixel Sprite
+        // Define palette based on phase
+        let paletteOverride: Record<string, string> | undefined;
+        
+        if (this.phase === 1) {
+            paletteOverride = {
+                'M': '#7b1fa2', // Purple
+                'D': '#4a148c', // Dark Purple
+                'L': '#ae52d4', // Light Purple
+                'S': '#4a0072', // Spots
+                'E': '#FFFF00', // Yellow Eye
+                'P': 'black'
+            };
+        } else if (this.phase === 2) {
+            paletteOverride = {
+                'M': '#9c1fa2', // Red-Purple
+                'D': '#6a1b9a', 
+                'L': '#d05ce3',
+                'S': '#6a0080',
+                'E': '#ffaa00', // Orange Eye
+                'P': 'black'
+            };
+        } else {
+            // Phase 3: Red/Hellish
+            paletteOverride = {
+                'M': '#b71c1c', // Red
+                'D': '#7f0000', // Dark Red
+                'L': '#f05545', // Light Red
+                'S': '#560027', // Darker spots
+                'E': '#ff0000', // Red Eye
+                'P': '#400000'  // Dark Pupil
+            };
+        }
         
         // Glow effect in later phases
         if (this.phase >= 2) {
             ctx.shadowBlur = 20;
             ctx.shadowColor = this.phase === 2 ? '#ff5722' : '#ff0000';
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
         }
         
-        // Eyes - get bigger and angrier
-        const eyeSizeX = 15 + (this.phase - 1) * 5;
-        const eyeSizeY = 25 + (this.phase - 1) * 5;
-        const eyeColor = this.phase === 1 ? 'yellow' : 
-                        this.phase === 2 ? '#ffaa00' : '#ff0000'; // Orange -> Red
-        ctx.fillStyle = eyeColor;
-        ctx.beginPath();
-        ctx.ellipse(-30, -10, eyeSizeX, eyeSizeY, 0, 0, Math.PI * 2);
-        ctx.ellipse(30, -10, eyeSizeX, eyeSizeY, 0, 0, Math.PI * 2);
-        ctx.fill();
+        const sprite = SpriteFactory.getSprite('boss_kraken', paletteOverride);
         
-        // Pupils - get smaller and more focused (angrier look)
-        const pupilSize = 5 - (this.phase - 1) * 1;
-        ctx.fillStyle = 'black';
-        ctx.beginPath();
-        ctx.arc(-30, -10, pupilSize, 0, Math.PI * 2);
-        ctx.arc(30, -10, pupilSize, 0, Math.PI * 2);
-        ctx.fill();
+        // Scale sprite to match radius (radius is 100px)
+        // Sprite is 32x32. We want it to cover roughly radius*2
+        const scale = (this.radius * 2.2) / sprite.width;
         
-        // Angry eyebrows/scars in phase 2+
-        if (this.phase >= 2) {
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            // Angry eyebrows
-            ctx.moveTo(-45, -25);
-            ctx.lineTo(-35, -20);
-            ctx.moveTo(35, -20);
-            ctx.lineTo(45, -25);
-            ctx.stroke();
-        }
+        const spriteW = sprite.width * scale;
+        const spriteH = sprite.height * scale;
         
-        // Phase 3: Red veins/glow
+        ctx.drawImage(sprite, -spriteW/2, -spriteH/2, spriteW, spriteH);
+        
+        // Reset shadow
+        ctx.shadowBlur = 0;
+
+        // Phase 3: Red veins/glow overlay (optional extra detail)
         if (this.phase >= 3) {
-            ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 2;
-            for(let i=0; i<6; i++) {
-                const angle = (Math.PI * 2 / 6) * i;
-                const startX = Math.cos(angle) * (this.radius * 0.7);
-                const startY = Math.sin(angle) * (this.radius * 0.7);
-                const endX = Math.cos(angle) * this.radius;
-                const endY = Math.sin(angle) * this.radius;
-                ctx.beginPath();
-                ctx.moveTo(startX, startY);
-                ctx.lineTo(endX, endY);
-                ctx.stroke();
-            }
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.globalAlpha = 0.3;
+            ctx.drawImage(sprite, -spriteW/2, -spriteH/2, spriteW, spriteH);
+            ctx.globalAlpha = 1.0;
+            ctx.globalCompositeOperation = 'source-over';
         }
         
         ctx.restore();
