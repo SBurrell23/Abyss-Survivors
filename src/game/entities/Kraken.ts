@@ -79,6 +79,60 @@ export class Kraken {
                            80; // Much more damage
              this.game.player.takeDamage(damage * dt);
         }
+        
+        // Tentacle collision with player
+        this.checkTentacleCollision(dt);
+    }
+    
+    checkTentacleCollision(dt: number) {
+        const tentacleWidth = 20 + (this.phase - 1) * 5; // Same as draw width
+        const tentacleRadius = tentacleWidth / 2; // Half width for collision
+        const playerPos = this.game.player.position;
+        const playerRadius = this.game.player.radius;
+        
+        // Tentacle damage scales with phase
+        const tentacleDamage = this.phase === 1 ? 15 : 
+                              this.phase === 2 ? 30 : 
+                              50; // More damage in later phases
+        
+        // Check each tentacle
+        this.tentacles.forEach((t, i) => {
+            // Calculate tentacle points in world space
+            const startX = this.position.x;
+            const startY = this.position.y;
+            const endX = this.position.x + Math.cos(t.angle) * t.length;
+            const endY = this.position.y + Math.sin(t.angle) * t.length;
+            
+            // Calculate midpoint with wiggle (same as draw)
+            const tentacleSpeed = 200 - (this.phase - 1) * 50;
+            const wiggleAmount = 20 + (this.phase - 1) * 15;
+            const midX = this.position.x + (endX - startX) / 2 + Math.sin(performance.now()/tentacleSpeed + i) * wiggleAmount;
+            const midY = this.position.y + (endY - startY) / 2 + Math.cos(performance.now()/tentacleSpeed + i) * wiggleAmount;
+            
+            // Check collision by sampling points along the tentacle curve
+            // Sample multiple points along the quadratic curve
+            const samples = 10; // Number of points to check
+            for (let j = 0; j <= samples; j++) {
+                const t_param = j / samples; // 0 to 1
+                
+                // Calculate point on quadratic curve: (1-t)^2*P0 + 2*(1-t)*t*P1 + t^2*P2
+                const px = (1 - t_param) * (1 - t_param) * startX + 
+                          2 * (1 - t_param) * t_param * midX + 
+                          t_param * t_param * endX;
+                const py = (1 - t_param) * (1 - t_param) * startY + 
+                          2 * (1 - t_param) * t_param * midY + 
+                          t_param * t_param * endY;
+                
+                // Check distance from player to this point on tentacle
+                const dist = Math.sqrt((playerPos.x - px) ** 2 + (playerPos.y - py) ** 2);
+                
+                if (dist < tentacleRadius + playerRadius) {
+                    // Player is touching this tentacle
+                    this.game.player.takeDamage(tentacleDamage * dt);
+                    return; // Only damage once per tentacle per frame
+                }
+            }
+        });
     }
     
     attack() {
