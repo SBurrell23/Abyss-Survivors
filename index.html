@@ -262,8 +262,71 @@
       
       /* Death Screen */
       #death-screen h1 { color: #ff4444; text-shadow: 0 0 20px rgba(255, 68, 68, 0.5); }
-      .death-stat { font-size: 1.5em; margin: 10px 0; color: #ccc; }
+      .death-stat { font-size: 1.5em; margin: 8px 0; color: #ccc; }
       .death-stat span { color: #fff; font-weight: bold; }
+      
+      /* Victory Stats Layout */
+      .victory-stats {
+          display: flex;
+          gap: 50px;
+          justify-content: center;
+          align-items: flex-start;
+          margin: 20px 0;
+          max-width: 1400px;
+          margin-left: auto;
+          margin-right: auto;
+      }
+      
+      .stats-column {
+          display: flex;
+          flex-direction: column;
+          min-width: 280px;
+      }
+      
+      .stats-column h3 {
+          font-size: 1.8em;
+          margin-bottom: 10px;
+          margin-top: 0;
+          color: #fff;
+          text-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
+      }
+      
+      .game-stat {
+          margin: 4px 0 !important;
+          font-size: 1.4em;
+      }
+      
+      .enemy-kills-column {
+          display: flex;
+          flex-direction: column;
+          min-width: 400px;
+      }
+      
+      .enemy-kills-column h3 {
+          font-size: 1.8em;
+          margin-bottom: 10px;
+          margin-top: 0;
+          color: #fff;
+          text-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
+      }
+      
+      .enemy-kills-grid {
+          display: flex;
+          gap: 30px;
+          flex-wrap: wrap;
+      }
+      
+      .enemy-kills-subcolumn {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-width: 180px;
+      }
+      
+      .enemy-stat {
+          margin: 4px 0 !important;
+          font-size: 1.4em;
+      }
       
       #restart-btn {
           margin-top: 30px;
@@ -526,7 +589,7 @@
           <h1>Your sub imploded!</h1>
           <div class="death-stat">Max Depth: <span id="death-level">0m</span></div>
           <div class="death-stat">Final Score: <span id="death-score">0</span></div>
-          <button id="restart-btn">TRY AGAIN</button>
+          <button id="restart-btn">DIVE AGAIN</button>
       </div>
 
       <!-- Settings Button -->

@@ -190,6 +190,9 @@ export class Enemy {
   }
 
   takeDamage(amount: number) {
+      const actualDamage = Math.min(amount, this.hp); // Don't count overkill
+      this.game.totalDamageDealt += actualDamage;
+      
       this.hp -= amount;
       this.damageFlashTimer = 0.1; // Flash for 0.1 seconds
       if (this.hp <= 0) {

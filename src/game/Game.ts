@@ -72,6 +72,11 @@ export class Game {
   isPaused: boolean = false;
   isGameOver: boolean = false;
   
+  // Stats tracking
+  totalDamageDealt: number = 0;
+  enemyKills: Map<string, number> = new Map();
+  gameStartTime: number = 0;
+  
   mousePosition: Vector2 = new Vector2(0, 0);
 
   // Camera
@@ -493,6 +498,7 @@ export class Game {
 
   start() {
     this.lastTime = performance.now();
+    this.gameStartTime = performance.now();
     requestAnimationFrame(this.loop.bind(this));
   }
 
@@ -1024,21 +1030,77 @@ export class Game {
               existingStats.remove();
           }
           
-          // Calculate total power ups
-          const inventory = this.upgradeManager.getInventory();
-          const totalPowerUps = inventory.reduce((sum, item) => sum + item.count, 0);
-          const uniquePowerUps = inventory.length;
+          // Format time helper
+          const formatTime = (seconds: number): string => {
+              const mins = Math.floor(seconds / 60);
+              const secs = Math.floor(seconds % 60);
+              return `${mins}:${secs.toString().padStart(2, '0')}`;
+          };
           
-          // Add stats
+          // Format number with commas
+          const formatNumber = (num: number): string => {
+              return num.toLocaleString();
+          };
+          
+          // Calculate time played
+          const totalTimeSeconds = (performance.now() - this.gameStartTime) / 1000;
+          
+          // Get enemy kill counts
+          const monsterNames: Record<string, string> = {
+              'fish_small': 'Guppy',
+              'fish_medium': 'Piranha',
+              'crab': 'Armored Crab',
+              'eel': 'Electric Eel',
+              'angler': 'Angler Fish',
+              'squid': 'Giant Squid',
+              'shark': 'Great White',
+              'turtle': 'Ancient Turtle',
+              'ray': 'Manta Ray',
+              'abyss_horror': 'Abyss Horror'
+          };
+          
+          // Build enemy kills list with dynamic columns (5 per column)
+          let enemyKillsHTML = '';
+          const sortedKills = Array.from(this.enemyKills.entries())
+              .filter(([_, count]) => count > 0)
+              .sort((a, b) => b[1] - a[1]); // Sort by count descending
+          
+          if (sortedKills.length > 0) {
+              const enemiesPerColumn = 5;
+              const numColumns = Math.ceil(sortedKills.length / enemiesPerColumn);
+              
+              enemyKillsHTML = '<div class="enemy-kills-column"><h3>Enemies Defeated</h3><div class="enemy-kills-grid">';
+              
+              // Create columns dynamically
+              for (let col = 0; col < numColumns; col++) {
+                  const startIdx = col * enemiesPerColumn;
+                  const endIdx = Math.min(startIdx + enemiesPerColumn, sortedKills.length);
+                  const columnKills = sortedKills.slice(startIdx, endIdx);
+                  
+                  enemyKillsHTML += '<div class="enemy-kills-subcolumn">';
+                  columnKills.forEach(([id, count]) => {
+                      const name = monsterNames[id] || id;
+                      enemyKillsHTML += `<p class="death-stat enemy-stat">${name}: <span>${formatNumber(count)}</span></p>`;
+                  });
+                  enemyKillsHTML += '</div>';
+              }
+              
+              enemyKillsHTML += '</div></div>';
+          }
+          
+          // Add stats with two-column layout
           const stats = document.createElement('div');
           stats.className = 'victory-stats';
           stats.innerHTML = `
-            <p class="death-stat">Time Played: <span>${Math.floor(this.lastTime / 1000)}s</span></p>
-            <p class="death-stat">Boss Fight Duration: <span>${Math.floor(this.bossFightTimer)}s</span></p>
-            <p class="death-stat">Total Power Ups Collected: <span>${totalPowerUps}</span></p>
-            <p class="death-stat">Unique Power Ups: <span>${uniquePowerUps}</span></p>
-            <p class="death-stat">Final Score: <span>${this.score}</span></p>
-            <p class="death-stat">Max Depth: <span>${this.depth}m</span></p>
+            <div class="stats-column">
+              <h3>Game Stats</h3>
+              <p class="death-stat game-stat">Time Played: <span>${formatTime(totalTimeSeconds)}</span></p>
+              <p class="death-stat game-stat">Boss Fight Duration: <span>${formatTime(this.bossFightTimer)}</span></p>
+              <p class="death-stat game-stat">Final Score: <span>${formatNumber(this.score)}</span></p>
+              <p class="death-stat game-stat">Final Level: <span>${this.upgradeLevel}</span></p>
+              <p class="death-stat game-stat">Total Damage Dealt: <span>${formatNumber(Math.floor(this.totalDamageDealt))}</span></p>
+            </div>
+            ${enemyKillsHTML}
           `;
           const restartBtn = document.getElementById('restart-btn');
           if (restartBtn) {
@@ -1230,7 +1292,18 @@ export class Game {
   }
   
   onEnemyHit(enemy: Enemy) {
+      // Track damage dealt
+      if (enemy.hp > 0) {
+          // Damage is dealt before hp check, so we track it here
+          // We'll track it in takeDamage instead for accuracy
+      }
+      
       if (enemy.hp <= 0) {
+          // Track enemy kill by type
+          const enemyType = enemy.stats.id || 'unknown';
+          const currentKills = this.enemyKills.get(enemyType) || 0;
+          this.enemyKills.set(enemyType, currentKills + 1);
+          
           this.soundManager.playEnemyDeath();
           // Check scavenger protocol
           if (this.player.scavengerChance > 0 && Math.random() < this.player.scavengerChance) {

@@ -302,6 +302,9 @@ export class Kraken {
     }
     
     takeDamage(amount: number) {
+        const actualDamage = Math.min(amount, this.hp); // Don't count overkill
+        this.game.totalDamageDealt += actualDamage;
+        
         this.hp -= amount;
         if (this.hp <= 0) {
             // Advance to next phase or win
