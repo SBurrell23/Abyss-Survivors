@@ -93,16 +93,19 @@ export class SoundManager {
     }
 
     // Helper to get sound URL
+    // In production, sound_assets is in the public folder, so use relative path from root
     private getSoundUrl(path: string): string {
-        return new URL(path, import.meta.url).href;
+        // Path should be relative to public folder (e.g., 'AUDIO/Swoosh/file.wav')
+        // Since base is './', prepend 'sound_assets/' to get the correct path
+        return `sound_assets/${path}`;
     }
 
     // Convenience methods for common sounds
     playShoot(volume: number = 0.3) {
         const sounds = [
-            this.getSoundUrl('../sound_assets/AUDIO/Swoosh/SFX_Movement_Swoosh_Fast_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Swoosh/SFX_Movement_Swoosh_Fast_2.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Swoosh/SFX_Movement_Swoosh_Fast_3.wav'),
+            this.getSoundUrl('AUDIO/Swoosh/SFX_Movement_Swoosh_Fast_1.wav'),
+            this.getSoundUrl('AUDIO/Swoosh/SFX_Movement_Swoosh_Fast_2.wav'),
+            this.getSoundUrl('AUDIO/Swoosh/SFX_Movement_Swoosh_Fast_3.wav'),
         ];
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
         this.playSound(sound, volume, 1.2);
@@ -110,10 +113,10 @@ export class SoundManager {
 
     playEnemyDeath(volume: number = 0.4) {
         const sounds = [
-            this.getSoundUrl('../sound_assets/AUDIO/Eat_Bite/SFX_Eat_Bite_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Eat_Bite/SFX_Eat_Bite_2.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Eat_Bite/SFX_Eat_Bite_3.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Eat_Bite/SFX_Eat_Bite_4.wav'),
+            this.getSoundUrl('AUDIO/Eat_Bite/SFX_Eat_Bite_1.wav'),
+            this.getSoundUrl('AUDIO/Eat_Bite/SFX_Eat_Bite_2.wav'),
+            this.getSoundUrl('AUDIO/Eat_Bite/SFX_Eat_Bite_3.wav'),
+            this.getSoundUrl('AUDIO/Eat_Bite/SFX_Eat_Bite_4.wav'),
         ];
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
         this.playSound(sound, volume);
@@ -121,9 +124,9 @@ export class SoundManager {
 
     playXPCollect(volume: number = 0.3) {
         const sounds = [
-            this.getSoundUrl('../sound_assets/AUDIO/Collect/Coin/SFX_Player_Collect_Coin_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Collect/Coin/SFX_Player_Collect_Coin_2.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Collect/Coin/SFX_Player_Collect_Coin_3.wav'),
+            this.getSoundUrl('AUDIO/Collect/Coin/SFX_Player_Collect_Coin_1.wav'),
+            this.getSoundUrl('AUDIO/Collect/Coin/SFX_Player_Collect_Coin_2.wav'),
+            this.getSoundUrl('AUDIO/Collect/Coin/SFX_Player_Collect_Coin_3.wav'),
         ];
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
         this.playSound(sound, volume, 1.1);
@@ -132,20 +135,20 @@ export class SoundManager {
     playChestOpen(rarity: 'common' | 'rare' | 'legendary' = 'common', volume: number = 0.5) {
         let sound: string;
         if (rarity === 'legendary') {
-            sound = this.getSoundUrl('../sound_assets/AUDIO/Chest_Open/SFX_Chest_Open_Rich_1.wav');
+            sound = this.getSoundUrl('AUDIO/Chest_Open/SFX_Chest_Open_Rich_1.wav');
         } else if (rarity === 'rare') {
-            sound = this.getSoundUrl('../sound_assets/AUDIO/Chest_Open/SFX_Chest_Open_1.wav');
+            sound = this.getSoundUrl('AUDIO/Chest_Open/SFX_Chest_Open_1.wav');
         } else {
-            sound = this.getSoundUrl('../sound_assets/AUDIO/Chest_Open/SFX_Chest_Open_Plain_1.wav');
+            sound = this.getSoundUrl('AUDIO/Chest_Open/SFX_Chest_Open_Plain_1.wav');
         }
         this.playSound(sound, volume);
     }
 
     playExplosion(volume: number = 0.25) {
         const sounds = [
-            this.getSoundUrl('../sound_assets/AUDIO/Firework/SFX_Firework_Explosion_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Firework/SFX_Firework_Explosion_2.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Firework/SFX_Firework_Explosion_3.wav'),
+            this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_1.wav'),
+            this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_2.wav'),
+            this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_3.wav'),
         ];
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
         // Play at lower volume and cut off after 100ms
@@ -153,14 +156,14 @@ export class SoundManager {
     }
 
     playLevelUp(volume: number = 0.6) {
-        this.playSound(this.getSoundUrl('../sound_assets/AUDIO/Chimes/SFX_Chimes_Glowing_Stars_1.wav'), volume);
+        this.playSound(this.getSoundUrl('AUDIO/Chimes/SFX_Chimes_Glowing_Stars_1.wav'), volume);
     }
 
     playPowerup(volume: number = 0.5) {
         const sounds = [
-            this.getSoundUrl('../sound_assets/AUDIO/Powerup/SFX_Powerup_Potion_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Powerup/SFX_Powerup_Crystal_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Powerup/SFX_Powerup_Bright_1.wav'),
+            this.getSoundUrl('AUDIO/Powerup/SFX_Powerup_Potion_1.wav'),
+            this.getSoundUrl('AUDIO/Powerup/SFX_Powerup_Crystal_1.wav'),
+            this.getSoundUrl('AUDIO/Powerup/SFX_Powerup_Bright_1.wav'),
         ];
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
         this.playSound(sound, volume);
@@ -168,22 +171,22 @@ export class SoundManager {
 
     playPlayerDamage(volume: number = 0.3) {
         const sounds = [
-            this.getSoundUrl('../sound_assets/AUDIO/Rattle/Metal/SFX_Rattle_Metal_Single_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Rattle/Metal/SFX_Rattle_Metal_Single_2.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Rattle/Metal/SFX_Rattle_Metal_Single_3.wav'),
+            this.getSoundUrl('AUDIO/Rattle/Metal/SFX_Rattle_Metal_Single_1.wav'),
+            this.getSoundUrl('AUDIO/Rattle/Metal/SFX_Rattle_Metal_Single_2.wav'),
+            this.getSoundUrl('AUDIO/Rattle/Metal/SFX_Rattle_Metal_Single_3.wav'),
         ];
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
         this.playSound(sound, volume, 1.3);
     }
 
     playMinigameStart(volume: number = 0.4) {
-        this.playSound(this.getSoundUrl('../sound_assets/AUDIO/Spin_Wheel/SFX_SpinWheel_Start_1.wav'), volume);
+        this.playSound(this.getSoundUrl('AUDIO/Spin_Wheel/SFX_SpinWheel_Start_1.wav'), volume);
     }
 
     playMinigameLoop(volume: number = 0.2): AudioBufferSourceNode | null {
         if (!this.audioContext) return null;
         
-        const path = this.getSoundUrl('../sound_assets/AUDIO/Spin_Wheel/SFX_SpinWheel_Fast_Loop_1.wav');
+        const path = this.getSoundUrl('AUDIO/Spin_Wheel/SFX_SpinWheel_Fast_Loop_1.wav');
         // For looping sounds, we'd need to handle them differently
         // For now, just play once
         this.playSound(path, volume);
@@ -192,14 +195,14 @@ export class SoundManager {
 
     playBossFightEntry(volume: number = 0.6) {
         // Use a dramatic sound - maybe explosion or chimes
-        this.playSound(this.getSoundUrl('../sound_assets/AUDIO/Firework/SFX_Firework_Explosion_1.wav'), volume, 0.6);
+        this.playSound(this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_1.wav'), volume, 0.6);
     }
 
     playVictory(volume: number = 0.7) {
         const sounds = [
-            this.getSoundUrl('../sound_assets/AUDIO/Confetti/SFX_Confetti_Explosion_Bright_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Confetti/SFX_Confetti_Explosion_Bright_2.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Confetti/SFX_Confetti_Explosion_Bright_3.wav'),
+            this.getSoundUrl('AUDIO/Confetti/SFX_Confetti_Explosion_Bright_1.wav'),
+            this.getSoundUrl('AUDIO/Confetti/SFX_Confetti_Explosion_Bright_2.wav'),
+            this.getSoundUrl('AUDIO/Confetti/SFX_Confetti_Explosion_Bright_3.wav'),
         ];
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
         this.playSound(sound, volume);
@@ -207,15 +210,15 @@ export class SoundManager {
 
     playUIClick(volume: number = 0.2) {
         // Use cash register or pop sound for UI
-        this.playSound(this.getSoundUrl('../sound_assets/AUDIO/Cash_Register/SFX_Cash_Register_Buy_Click_1.wav'), volume, 1.2);
+        this.playSound(this.getSoundUrl('AUDIO/Cash_Register/SFX_Cash_Register_Buy_Click_1.wav'), volume, 1.2);
     }
 
     playVolumeTest(volume: number = 0.15) {
         // Use a subtle pop sound for volume testing
         const sounds = [
-            this.getSoundUrl('../sound_assets/AUDIO/Pop/Liquid/SFX_Pop_Liquid_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Pop/Liquid/SFX_Pop_Liquid_2.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Pop/Liquid/SFX_Pop_Liquid_3.wav'),
+            this.getSoundUrl('AUDIO/Pop/Liquid/SFX_Pop_Liquid_1.wav'),
+            this.getSoundUrl('AUDIO/Pop/Liquid/SFX_Pop_Liquid_2.wav'),
+            this.getSoundUrl('AUDIO/Pop/Liquid/SFX_Pop_Liquid_3.wav'),
         ];
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
         this.playSound(sound, volume, 1.0);
@@ -224,9 +227,9 @@ export class SoundManager {
     playDeath(volume: number = 0.5) {
         // Use a dramatic sound for death - maybe a low explosion or rattle
         const sounds = [
-            this.getSoundUrl('../sound_assets/AUDIO/Firework/SFX_Firework_Explosion_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Rattle/Metal/SFX_Rattle_Metal_1.wav'),
-            this.getSoundUrl('../sound_assets/AUDIO/Rattle/Metal/SFX_Rattle_Metal_2.wav'),
+            this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_1.wav'),
+            this.getSoundUrl('AUDIO/Rattle/Metal/SFX_Rattle_Metal_1.wav'),
+            this.getSoundUrl('AUDIO/Rattle/Metal/SFX_Rattle_Metal_2.wav'),
         ];
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
         this.playSound(sound, volume, 0.7);
@@ -235,7 +238,7 @@ export class SoundManager {
     playMinigameBounceLeft(volume: number = 0.2) {
         // First click sound for left side (metronome tick)
         this.playSound(
-            this.getSoundUrl('../sound_assets/AUDIO/Pop/Liquid/SFX_Pop_Liquid_1.wav'),
+            this.getSoundUrl('AUDIO/Pop/Liquid/SFX_Pop_Liquid_1.wav'),
             volume,
             1.5
         );
@@ -244,7 +247,7 @@ export class SoundManager {
     playMinigameBounceRight(volume: number = 0.2) {
         // Second click sound for right side (metronome tock)
         this.playSound(
-            this.getSoundUrl('../sound_assets/AUDIO/Pop/Liquid/SFX_Pop_Liquid_2.wav'),
+            this.getSoundUrl('AUDIO/Pop/Liquid/SFX_Pop_Liquid_2.wav'),
             volume,
             1.5
         );
