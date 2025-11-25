@@ -228,6 +228,7 @@ export class Player {
       }
       
       this.game.projectiles.push(projectile);
+      this.game.soundManager.playShoot();
   }
   
 
@@ -284,6 +285,9 @@ export class Player {
     
     // Trigger damage flash
     this.damageFlashTimer = 0.3; // Flash for 0.3 seconds
+    
+    // Play damage sound
+    this.game.soundManager.playPlayerDamage();
     
     if (this.hp <= 0) {
         this.hp = 0;

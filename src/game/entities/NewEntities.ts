@@ -65,5 +65,6 @@ export class DepthCharge {
     explode() {
         this.active = false;
         this.game.createExplosion(this.position, 150, this.damage);
+        // Explosion sound is played in createExplosion
     }
 }

@@ -12,6 +12,7 @@ import { Vector2 } from './utils';
 import { UpgradeManager } from './UpgradeManager';
 import monstersData from './data/monsters.json';
 import { SpriteFactory } from './graphics/SpriteFactory';
+import { SoundManager } from './SoundManager';
 
 interface Particle {
     x: number; 
@@ -42,6 +43,7 @@ export class Game {
   obstacles: Obstacle[] = [];
   
   upgradeManager: UpgradeManager;
+  soundManager: SoundManager;
   
   // Boss Fight Arena
   arenaBounds: { minX: number; maxX: number; minY: number; maxY: number } | null = null;
@@ -51,6 +53,7 @@ export class Game {
   minigameCursor: number = 0; // 0 to 1
   minigameDirection: number = 1; 
   minigameShowingReward: boolean = false;
+  minigameLastCursor: number = 0; // Track previous cursor position to detect bounces
   
   // Debug
   isDebugMenuOpen: boolean = false;
@@ -103,11 +106,16 @@ export class Game {
     this.setupRestart();
     this.initParticleDefs();
 
+    this.soundManager = new SoundManager();
+    this.soundManager.loadSettings();
     this.player = new Player(this, 0, 0);
     this.upgradeManager = new UpgradeManager(this);
     
     // Initialize Debug Menu after UpgradeManager is ready
     this.setupDebugMenu();
+    
+    // Setup Settings Menu
+    this.setupSettingsMenu();
     
     // Override Player spawn methods to hook into Game
     this.player.spawnDepthCharge = () => {
@@ -116,6 +124,67 @@ export class Game {
     
     // Spawn initial treasure chests
     this.spawnInitialChests();
+  }
+  
+  setupSettingsMenu() {
+      const settingsBtn = document.getElementById('settings-btn');
+      const settingsMenu = document.getElementById('settings-menu');
+      const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
+      const volumeValue = document.getElementById('volume-value');
+      const closeBtn = document.getElementById('settings-close-btn');
+      
+      if (!settingsBtn || !settingsMenu || !volumeSlider || !volumeValue || !closeBtn) return;
+      
+      const openMenu = () => {
+          if (this.isGameOver) return; // Don't open settings if game is over
+          settingsMenu.style.display = 'flex';
+          this.isPaused = true;
+          this.soundManager.playUIClick();
+      };
+      
+      const closeMenu = () => {
+          settingsMenu.style.display = 'none';
+          this.isPaused = false;
+          this.lastTime = performance.now();
+          this.soundManager.playUIClick();
+      };
+      
+      settingsBtn.onclick = () => {
+          if (settingsMenu.style.display === 'flex') {
+              closeMenu();
+          } else {
+              openMenu();
+          }
+      };
+      
+      closeBtn.onclick = () => {
+          closeMenu();
+      };
+      
+      // Update volume slider from saved value
+      const savedVolume = this.soundManager.getMasterVolume();
+      volumeSlider.value = (savedVolume * 100).toString();
+      volumeValue.innerText = `${Math.round(savedVolume * 100)}%`;
+      
+      // Throttle sound playback to avoid too many sounds when dragging
+      let lastSoundTime = 0;
+      const soundThrottle = 150; // Play sound at most every 150ms
+      
+      volumeSlider.oninput = (e: any) => {
+          const volume = parseInt(e.target.value) / 100;
+          this.soundManager.setMasterVolume(volume);
+          volumeValue.innerText = `${Math.round(volume * 100)}%`;
+          
+          // Play a subtle test sound at the current volume level (async to not block dragging)
+          const now = performance.now();
+          if (now - lastSoundTime > soundThrottle) {
+              // Use setTimeout to make it async and not block slider movement
+              setTimeout(() => {
+                  this.soundManager.playVolumeTest(0.3);
+              }, 0);
+              lastSoundTime = now;
+          }
+      };
   }
   
   setupDebugMenu() {
@@ -238,6 +307,7 @@ export class Game {
       }
       
       this.explosions.push(new Explosion(this, pos.x, pos.y, radius));
+      this.soundManager.playExplosion();
   }
   
   initParticleDefs() {
@@ -444,13 +514,25 @@ export class Game {
         if (this.minigameShowingReward) return; // Pause everything
 
         this.minigameCursor += this.minigameDirection * dt * 1.5; // Speed Reduced
+        
+        // Check for bounces and play alternating metronome sounds
         if (this.minigameCursor >= 1) {
             this.minigameCursor = 1;
+            if (this.minigameLastCursor < 1) {
+                // Just hit the right side - play "tick"
+                this.soundManager.playMinigameBounceLeft();
+            }
             this.minigameDirection = -1;
         } else if (this.minigameCursor <= 0) {
             this.minigameCursor = 0;
+            if (this.minigameLastCursor > 0) {
+                // Just hit the left side - play "tock"
+                this.soundManager.playMinigameBounceRight();
+            }
             this.minigameDirection = 1;
         }
+        
+        this.minigameLastCursor = this.minigameCursor;
         
         const cursorEl = document.getElementById('gauge-cursor');
         if (cursorEl) cursorEl.style.left = `${this.minigameCursor * 100}%`;
@@ -763,6 +845,8 @@ export class Game {
       if (layer) layer.style.display = 'flex';
       if (rewardEl) rewardEl.style.display = 'none';
       this.minigameCursor = 0;
+      this.minigameLastCursor = 0;
+      this.soundManager.playMinigameStart();
   }
   
   stopMinigame() {
@@ -770,13 +854,16 @@ export class Game {
       this.minigameShowingReward = true;
       
       // Calculate Reward
-      let rarity = 'common';
+      let rarity: 'common' | 'rare' | 'legendary' = 'common';
       // Zones: Rare 42.5-57.5? No, CSS says: Rare width 15% at 42.5%, Legendary width 5% at 47.5%
       // Rare: 0.425 to 0.575
       // Legendary: 0.475 to 0.525 (Inside Rare)
       
       if (this.minigameCursor >= 0.425 && this.minigameCursor <= 0.575) rarity = 'rare';
       if (this.minigameCursor >= 0.475 && this.minigameCursor <= 0.525) rarity = 'legendary';
+      
+      // Play chest open sound with correct rarity
+      this.soundManager.playChestOpen(rarity);
       
       // Filter out upgrades that have reached max rank
       const upgrades = this.upgradeManager.upgrades.filter(u => {
@@ -801,6 +888,7 @@ export class Game {
       
       if (pick) {
           this.upgradeManager.applyUpgrade(pick);
+          this.soundManager.playPowerup();
           
           // Show UI
           const rewardEl = document.getElementById('minigame-reward');
@@ -860,6 +948,8 @@ export class Game {
       // UI Updates
       const depthMeter = document.getElementById('depth-meter-container');
       if (depthMeter) depthMeter.style.display = 'none';
+      
+      this.soundManager.playBossFightEntry();
   }
   
   spawnBossObstacles(centerX: number, centerY: number, arenaSize: number) {
@@ -882,6 +972,7 @@ export class Game {
   
   winGame() {
       this.isGameOver = true;
+      this.soundManager.playVictory();
       // Show Victory Screen
       const deathScreen = document.getElementById('death-screen');
       if (deathScreen) {
@@ -945,11 +1036,12 @@ export class Game {
              if (enemy.position.distanceTo(this.player.position) < (enemy.radius + this.player.radius)) {
                  this.player.takeDamage(10 * 0.016); 
              }
-             // Projectiles vs Minions
+              // Projectiles vs Minions
              for (const proj of this.projectiles) {
                  if (!proj.isEnemy && proj.position.distanceTo(enemy.position) < proj.radius + enemy.radius) {
                      enemy.takeDamage(proj.damage);
                      proj.onHit(enemy);
+                     this.onEnemyHit(enemy);
                  }
              }
           }
@@ -959,6 +1051,7 @@ export class Game {
               if (orb.position.distanceTo(this.player.position) < (orb.radius + this.player.radius)) {
                   this.collectXP(orb.value);
                   orb.active = false;
+                  this.soundManager.playXPCollect();
               }
           }
           
@@ -1099,12 +1192,14 @@ export class Game {
           if (orb.position.distanceTo(this.player.position) < (orb.radius + this.player.radius)) {
               this.collectXP(orb.value);
               orb.active = false;
+              this.soundManager.playXPCollect();
           }
       }
   }
   
   onEnemyHit(enemy: Enemy) {
       if (enemy.hp <= 0) {
+          this.soundManager.playEnemyDeath();
           // Check scavenger protocol
           if (this.player.scavengerChance > 0 && Math.random() < this.player.scavengerChance) {
               // Drop Health Pack (Just instant heal for now?)
@@ -1129,6 +1224,7 @@ export class Game {
       this.upgradeLevel++;
       this.xp -= this.xpToNextLevel;
       this.xpToNextLevel = Math.floor(this.xpToNextLevel * 1.2);
+      this.soundManager.playLevelUp();
       this.showUpgradeMenu();
   }
 
@@ -1154,6 +1250,7 @@ export class Game {
           `;
           el.onclick = () => {
               this.upgradeManager.applyUpgrade(opt);
+              this.soundManager.playUIClick();
               this.resumeGame();
           };
           optionsContainer.appendChild(el);
@@ -1170,7 +1267,7 @@ export class Game {
 
   updateUI() {
       const scoreEl = document.getElementById('score');
-      if (scoreEl) scoreEl.innerText = this.score.toString();
+      if (scoreEl) scoreEl.innerText = this.upgradeLevel.toString();
       
       // Update Depth UI
       const depthDisplay = document.getElementById('depth-value-display');
@@ -1258,6 +1355,7 @@ export class Game {
   
   gameOver() {
       this.isGameOver = true;
+      this.soundManager.playDeath();
       const deathScreen = document.getElementById('death-screen');
       if (deathScreen) {
           deathScreen.style.display = 'flex';
