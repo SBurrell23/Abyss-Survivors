@@ -167,6 +167,16 @@ export class Player {
           isGiantShot = true;
       }
 
+      // Calculate total number of projectiles to adjust sound volume slightly
+      let totalProjectiles = 1; // Base shot
+      if (this.rearGunsLevel > 0) totalProjectiles += 1; // Rear guns
+      if (this.multiShotLevel > 0) totalProjectiles += this.multiShotLevel * 2; // Multi-shot (2 per level)
+      
+      // Play sound once - slightly louder with more projectiles (but capped)
+      const baseVolume = 0.3;
+      const adjustedVolume = Math.min(0.4, baseVolume + (totalProjectiles - 1) * 0.02); // Slight increase, max 0.4
+      this.game.soundManager.playShoot(adjustedVolume);
+
       // Base shot
       this.fireProjectile(dir, speed, isGiantShot);
       
@@ -246,7 +256,7 @@ export class Player {
       }
       
       this.game.projectiles.push(projectile);
-      this.game.soundManager.playShoot();
+      // Sound is now played once in shootAtMouse() to prevent volume stacking
   }
   
 

@@ -178,12 +178,12 @@
     "name": "Scavenger Protocol",
     "description": "1% Chance for enemies to drop health (+1% per rank)",
     "rarity": "common",
-    "icon": "🩹",
+    "icon": "💊",
     "type": "stat",
     "stat": "scavengerChance",
     "value": 0.01,
     "op": "add",
-    "maxRank": 4
+    "maxRank": 3
   },
   {
     "id": "deep_pressure",
