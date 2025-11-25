@@ -711,19 +711,51 @@ export class Game {
   }
 
   spawnEnemy() {
-     // Spawn enemy just outside camera view
-     const angle = Math.random() * Math.PI * 2;
-     const dist = Math.max(this.canvas.width, this.canvas.height) / 2 + 50;
-     const spawnPos = new Vector2(
-        this.player.position.x + Math.cos(angle) * dist,
-        this.player.position.y + Math.sin(angle) * dist
-     );
+     // Spawn enemy completely off-screen using camera bounds
+     // Calculate diagonal distance to ensure off-screen spawning in all directions
+     const diagonalDist = Math.sqrt(this.canvas.width ** 2 + this.canvas.height ** 2) / 2;
+     const minSpawnDist = diagonalDist + 100; // Add buffer to ensure completely off-screen
      
-     // Prevent spawning above surface
-     if (spawnPos.y < 50) {
-         // Try to push it down or just abort this spawn
-         // Let's just reflect it down for simplicity
-         spawnPos.y = Math.abs(spawnPos.y) + 100;
+     // Try multiple angles to find a valid spawn position
+     let spawnPos: Vector2 | null = null;
+     let attempts = 0;
+     const maxAttempts = 10;
+     
+     while (!spawnPos && attempts < maxAttempts) {
+         attempts++;
+         const angle = Math.random() * Math.PI * 2;
+         const candidatePos = new Vector2(
+            this.player.position.x + Math.cos(angle) * minSpawnDist,
+            this.player.position.y + Math.sin(angle) * minSpawnDist
+         );
+         
+         // Check if position is off-screen using camera bounds
+         const screenLeft = this.camera.x;
+         const screenRight = this.camera.x + this.canvas.width;
+         const screenTop = this.camera.y;
+         const screenBottom = this.camera.y + this.canvas.height;
+         
+         // Ensure spawn is completely outside viewport with buffer
+         const buffer = 50;
+         const isOffScreen = 
+             candidatePos.x < screenLeft - buffer ||
+             candidatePos.x > screenRight + buffer ||
+             candidatePos.y < screenTop - buffer ||
+             candidatePos.y > screenBottom + buffer;
+         
+         // Prevent spawning above surface
+         if (isOffScreen && candidatePos.y >= 50) {
+             spawnPos = candidatePos;
+         }
+     }
+     
+     // If we couldn't find a valid position after attempts, use a safe fallback
+     if (!spawnPos) {
+         // Spawn far to the right of the screen as fallback
+         spawnPos = new Vector2(
+             this.camera.x + this.canvas.width + 200,
+             Math.max(50, this.player.position.y + (Math.random() - 0.5) * this.canvas.height)
+         );
      }
      
      const monsters = monstersData as MonsterStats[];
