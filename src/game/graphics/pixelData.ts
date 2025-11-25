@@ -330,5 +330,56 @@ export const spriteDefinitions: Record<string, SpriteDef> = {
             "................................",
             "..........D....................."
         ]
+    },
+    medkit: {
+        size: [12, 12],
+        palette: {
+            '.': 'transparent',
+            'R': '#cc0000', // Less bright red (main body)
+            'W': '#ffffff', // White (cross)
+            'D': '#990000', // Dark red (shadow/border)
+            'L': '#ff3333'  // Light red (highlight)
+        },
+        data: [
+            "............",
+            "...DDDDDD...",
+            "..DRRRRRRD..",
+            ".DRRRRRRRRD.",
+            ".DRRRRRRRRD.",
+            ".DRRRWRRRRD.",
+            ".DRRRRRRRRD.",
+            ".DRRRWRRRRD.",
+            ".DRRRRRRRRD.",
+            "..DRRRRRRD..",
+            "...DDDDDD...",
+            "............"
+        ]
+    },
+    medkit_cross: {
+        size: [16, 16],
+        palette: {
+            '.': 'transparent',
+            'R': '#ff0000', // Red (main body)
+            'W': '#ffffff', // White (cross)
+            'D': '#cc0000', // Dark red (shadow/border)
+        },
+        data: [
+            "................",
+            "................",
+            "....DDDDDDDD....",
+            "...DRRRRRRRRD...",
+            "..DRRRRRRRRRRD..",
+            ".DRRRWRRRRWRRRD.",
+            ".DRRRWRRRRWRRRD.",
+            ".DRRRWRRRRWRRRD.",
+            ".DRRRRRRRRRRRRD.",
+            ".DRRRRRRRRRRRRD.",
+            ".DRRRWRRRRWRRRD.",
+            ".DRRRWRRRRWRRRD.",
+            ".DRRRWRRRRWRRRD.",
+            "..DRRRRRRRRRRD..",
+            "...DDDDDDDDDD...",
+            "................"
+        ]
     }
 }

@@ -8,6 +8,7 @@ import { Explosion } from './entities/Explosion';
 import { TreasureChest } from './entities/TreasureChest';
 import { Kraken } from './entities/Kraken';
 import { Obstacle } from './entities/Obstacle';
+import { HealthPack } from './entities/HealthPack';
 import { Vector2 } from './utils';
 import { UpgradeManager } from './UpgradeManager';
 import monstersData from './data/monsters.json';
@@ -41,6 +42,7 @@ export class Game {
   treasureChests: TreasureChest[] = [];
   kraken: Kraken | null = null;
   obstacles: Obstacle[] = [];
+  healthPacks: HealthPack[] = [];
   
   upgradeManager: UpgradeManager;
   soundManager: SoundManager;
@@ -81,6 +83,8 @@ export class Game {
 
   // Camera
   camera: Vector2 = new Vector2(0, 0);
+  cameraShake: Vector2 = new Vector2(0, 0);
+  shakeIntensity: number = 0;
   
   // Debug
   xpMultiplier: number = 1;
@@ -313,6 +317,11 @@ export class Game {
       
       this.explosions.push(new Explosion(this, pos.x, pos.y, radius));
       this.soundManager.playExplosion();
+  }
+  
+  addScreenShake(intensity: number) {
+      // Add to existing shake (can stack)
+      this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
   }
   
   initParticleDefs() {
@@ -565,9 +574,24 @@ export class Game {
             }
         }
         
+        // Update screen shake
+        if (this.shakeIntensity > 0) {
+            this.cameraShake.x = (Math.random() - 0.5) * this.shakeIntensity * 2;
+            this.cameraShake.y = (Math.random() - 0.5) * this.shakeIntensity * 2;
+            this.shakeIntensity *= 0.85; // Decay shake (slower decay = more visible)
+            if (this.shakeIntensity < 0.05) {
+                this.shakeIntensity = 0;
+                this.cameraShake.x = 0;
+                this.cameraShake.y = 0;
+            }
+        } else {
+            this.cameraShake.x = 0;
+            this.cameraShake.y = 0;
+        }
+        
         // Update camera to follow player during boss fight
-        this.camera.x = this.player.position.x - this.canvas.width / 2;
-        this.camera.y = this.player.position.y - this.canvas.height / 2;
+        this.camera.x = this.player.position.x - this.canvas.width / 2 + this.cameraShake.x;
+        this.camera.y = this.player.position.y - this.canvas.height / 2 + this.cameraShake.y;
         
         // Update Enemies
         this.enemies.forEach(e => e.update(dt));
@@ -661,8 +685,23 @@ export class Game {
         targetCamY = minCamY;
     }
     
-    this.camera.x = this.player.position.x - this.canvas.width / 2;
-    this.camera.y = targetCamY;
+    // Update screen shake
+    if (this.shakeIntensity > 0) {
+        this.cameraShake.x = (Math.random() - 0.5) * this.shakeIntensity * 2;
+        this.cameraShake.y = (Math.random() - 0.5) * this.shakeIntensity * 2;
+        this.shakeIntensity *= 0.85; // Decay shake (slower decay = more visible)
+        if (this.shakeIntensity < 0.05) {
+            this.shakeIntensity = 0;
+            this.cameraShake.x = 0;
+            this.cameraShake.y = 0;
+        }
+    } else {
+        this.cameraShake.x = 0;
+        this.cameraShake.y = 0;
+    }
+    
+    this.camera.x = this.player.position.x - this.canvas.width / 2 + this.cameraShake.x;
+    this.camera.y = targetCamY + this.cameraShake.y;
 
     // Update enemies
     this.enemies.forEach(e => e.update(dt));
@@ -683,6 +722,10 @@ export class Game {
     // Update XP Orbs
     this.xpOrbs.forEach(o => o.update(dt));
     this.xpOrbs = this.xpOrbs.filter(o => o.active);
+    
+    // Update Health Packs
+    this.healthPacks.forEach(hp => hp.update(dt));
+    this.healthPacks = this.healthPacks.filter(hp => hp.active);
     
     // Update Treasure Chests
     this.treasureChests.forEach(c => {
@@ -1305,13 +1348,10 @@ export class Game {
           this.enemyKills.set(enemyType, currentKills + 1);
           
           this.soundManager.playEnemyDeath();
-          // Check scavenger protocol
+          // Check scavenger protocol - drop health pack
           if (this.player.scavengerChance > 0 && Math.random() < this.player.scavengerChance) {
-              // Drop Health Pack (Just instant heal for now?)
-              // Or maybe spawn a heart pickup?
-              // Instant heal for simplicity
-              this.player.hp = Math.min(this.player.maxHp, this.player.hp + 20);
-              // Visual Text?
+              // Spawn a health pack at enemy position
+              this.healthPacks.push(new HealthPack(this, enemy.position.x, enemy.position.y));
           }
           
           this.player.onEnemyKilled();
@@ -1595,6 +1635,7 @@ export class Game {
     // Draw Game Entities
     this.treasureChests.forEach(c => c.draw(this.ctx));
     this.xpOrbs.forEach(o => o.draw(this.ctx));
+    this.healthPacks.forEach(hp => hp.draw(this.ctx));
     this.depthCharges.forEach(d => d.draw(this.ctx));
     this.explosions.forEach(e => e.draw(this.ctx));
     this.enemies.forEach(e => e.draw(this.ctx));

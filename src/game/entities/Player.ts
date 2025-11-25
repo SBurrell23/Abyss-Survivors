@@ -26,7 +26,7 @@ export class Player {
   vampireHeal: number = 0; // HP per 50 kills
   damageReduction: number = 0; // 0 to 1
   deepPressure: boolean = false;
-  scavengerChance: number = 0; // 0 to 1
+  scavengerChance: number = 0.01; // Base 1% chance, max 5% at rank 4
   
   // Newest Stats
   scatterLevel: number = 0;
@@ -240,6 +240,9 @@ export class Player {
           projectile.radius *= 3; 
           projectile.knockbackForce += 500; // Massive push
           projectile.explosionRadius += 100;
+          
+          // Screen shake when giant torpedo is fired
+          this.game.addScreenShake(12); // Same amount as current explosion shake
       }
       
       this.game.projectiles.push(projectile);

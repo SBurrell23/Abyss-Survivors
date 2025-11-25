@@ -9,7 +9,7 @@ export class Projectile {
   velocity: Vector2;
   radius: number = 4;
   damage: number = 10;
-  duration: number = 2; // seconds
+  duration: number = 1.25; // seconds (reduced by 300px total range)
   active: boolean = true;
   
   // New properties

@@ -168,6 +168,11 @@ export class SoundManager {
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
         this.playSound(sound, volume);
     }
+    
+    playMedkitPickup(volume: number = 0.4) {
+        // Always play the same unique sound for medkit pickup
+        this.playSound(this.getSoundUrl('AUDIO/Powerup/SFX_Powerup_Potion_1.wav'), volume, 1.0);
+    }
 
     playPlayerDamage(volume: number = 0.3) {
         const sounds = [
