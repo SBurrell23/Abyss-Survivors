@@ -400,7 +400,7 @@ export class UpgradeManager {
               p.rearGunsLevel++;
               break;
           case 'increment_knockback':
-              p.knockbackStrength += 500; // Pixels per second impulse (+500 per rank)
+              p.knockbackStrength += 250; // Pixels per second impulse (+250 per rank)
               break;
           case 'unlock_freeze':
               p.freezeChance += 0.2; // +20% chance per rank

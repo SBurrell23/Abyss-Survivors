@@ -68,7 +68,7 @@ export class Kraken {
         const dir = this.game.player.position.sub(this.position).normalize();
         const moveSpeed = this.phase === 1 ? 40 : 
                          this.phase === 2 ? 70 : 
-                         110; // Much faster in each phase
+                         95; // Much faster in each phase
         this.position = this.position.add(dir.scale(moveSpeed * dt));
         
         // Tentacle animation - faster in later phases
