@@ -63,15 +63,15 @@
     "speed": 72,
     "radius": 25,
     "color": "#ff00ff",
-    "xp": 125,
+    "xp": 150,
     "score": 100,
     "weight": 5
   },
   {
     "id": "shark",
     "name": "Great White",
-    "hp": 200,
-    "speed": 168,
+    "hp": 190,
+    "speed": 165,
     "radius": 30,
     "color": "#708090",
     "xp": 250,
@@ -103,11 +103,11 @@
   {
     "id": "abyss_horror",
     "name": "Abyss Horror",
-    "hp": 650,
-    "speed": 40,
+    "hp": 666,
+    "speed": 35,
     "radius": 40,
     "color": "#000000",
-    "xp": 999,
+    "xp": 3000,
     "score": 500,
     "weight": 1
   }

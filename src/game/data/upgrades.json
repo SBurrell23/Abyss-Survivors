@@ -38,14 +38,14 @@
   {
     "id": "reinforced_hull",
     "name": "Reinforced Hull",
-    "description": "Increases Max HP by 25",
+    "description": "Increases Max HP by 50",
     "rarity": "common",
     "icon": "🛡️",
     "type": "stat",
     "stat": "maxHp",
-    "value": 25,
+    "value": 50,
     "op": "add",
-    "maxRank": 10
+    "maxRank": 5
   },
   {
     "id": "multi_shot",
@@ -65,7 +65,7 @@
     "icon": "💫",
     "type": "special",
     "effect": "increment_protection_ring",
-    "maxRank": 9
+    "maxRank": 7
   },
   {
     "id": "magnet",
@@ -107,7 +107,7 @@
     "icon": "🔭",
     "type": "special",
     "effect": "increment_homing",
-    "maxRank": 5
+    "maxRank": 3
   },
   {
     "id": "sniper_module",
@@ -127,19 +127,19 @@
     "icon": "💣",
     "type": "special",
     "effect": "unlock_depth_charge",
-    "maxRank": 7
+    "maxRank": 5
   },
   {
     "id": "critical_circuits",
     "name": "Critical Circuits",
-    "description": "+7% chance for double damage",
+    "description": "+13% chance for double damage",
     "rarity": "common",
     "icon": "☣️",
     "type": "stat",
     "stat": "critChance",
-    "value": 0.07,
+    "value": 0.13,
     "op": "add",
-    "maxRank": 10
+    "maxRank": 6
   },
   {
     "id": "plasma_field",
@@ -164,14 +164,14 @@
   {
     "id": "titanium_plating",
     "name": "Titanium Plating",
-    "description": "Reduces incoming damage by 10%",
+    "description": "Reduces incoming damage by 20%",
     "rarity": "common",
     "icon": "⛓️",
     "type": "stat",
     "stat": "damageReduction",
-    "value": 0.1,
+    "value": 0.2,
     "op": "add",
-    "maxRank": 10
+    "maxRank": 5
   },
   {
     "id": "scavenger_protocol",
@@ -243,7 +243,7 @@
     "icon": "🚀",
     "type": "special",
     "effect": "unlock_giant",
-    "maxRank": 5
+    "maxRank": 3
   },
   {
     "id": "xp_multiplier",
@@ -277,6 +277,6 @@
     "icon": "📡",
     "type": "special",
     "effect": "unlock_sonar_pulse",
-    "maxRank": 8
+    "maxRank": 7
   }
 ]
