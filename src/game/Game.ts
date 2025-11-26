@@ -117,7 +117,7 @@ export class Game {
 
     this.soundManager = new SoundManager();
     this.soundManager.loadSettings();
-    this.player = new Player(this, 0, 0);
+    this.player = new Player(this, 0, 75); // Start at y=75 (below surface at y=0)
     this.upgradeManager = new UpgradeManager(this);
     
     // Initialize Debug Menu after UpgradeManager is ready
@@ -514,6 +514,14 @@ export class Game {
              location.reload();
           };
       }
+      
+      // Also handle "DIVE AGAIN" button on victory screen
+      const diveAgainBtn = document.getElementById('dive-again-btn');
+      if (diveAgainBtn) {
+          diveAgainBtn.onclick = () => {
+             location.reload();
+          };
+      }
   }
 
   resize() {
@@ -540,6 +548,8 @@ export class Game {
   start() {
     this.lastTime = performance.now();
     this.gameStartTime = performance.now();
+    // Play water splash sound when game starts
+    this.soundManager.playWaterSplash();
     requestAnimationFrame(this.loop.bind(this));
   }
 
@@ -1435,9 +1445,12 @@ export class Game {
           
           this.soundManager.playEnemyDeath();
           // Check scavenger protocol - drop health pack
-          if (this.player.scavengerChance > 0 && Math.random() < this.player.scavengerChance) {
-              // Spawn a health pack at enemy position
-              this.healthPacks.push(new HealthPack(this, enemy.position.x, enemy.position.y));
+          if (this.player.scavengerChance > 0) {
+              const roll = Math.random();
+              if (roll < this.player.scavengerChance) {
+                  // Spawn a health pack at enemy position
+                  this.healthPacks.push(new HealthPack(this, enemy.position.x, enemy.position.y));
+              }
           }
           
           this.player.onEnemyKilled();

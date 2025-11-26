@@ -55,16 +55,40 @@ export class Player {
 
   vampireCounter: number = 0; // Track kills for vampire
   
+  // Spawn bobbing animation
+  spawnBobTimer: number = 0;
+  spawnTargetY: number = 0;
+  spawnBobComplete: boolean = false;
+  
   // Debug
   isInvulnerable: boolean = false;
 
   constructor(game: Game, x: number, y: number) {
     this.game = game;
+    this.spawnTargetY = y;
     this.position = new Vector2(x, y);
     this.velocity = new Vector2(0, 0);
+    this.spawnBobTimer = 0;
+    this.spawnBobComplete = false;
   }
 
   update(dt: number) {
+    // Handle spawn bobbing animation (0.5 seconds)
+    if (!this.spawnBobComplete) {
+      this.spawnBobTimer += dt;
+      if (this.spawnBobTimer < 0.5) {
+        // Bob down and up using a sine wave
+        // Start at spawnTargetY, go down 10px, then back up to spawnTargetY
+        const progress = this.spawnBobTimer / 0.5; // 0 to 1
+        const bobAmount = Math.sin(progress * Math.PI) * 10; // +10px down, then back to 0
+        this.position.y = this.spawnTargetY + bobAmount;
+      } else {
+        // Animation complete, ensure position is correct and mark as complete
+        this.position.y = this.spawnTargetY;
+        this.spawnBobComplete = true;
+      }
+    }
+    
     const input = this.game.input;
     const moveDir = new Vector2(0, 0);
 
@@ -75,7 +99,10 @@ export class Player {
 
     const normalizedDir = moveDir.normalize();
     this.position.x += normalizedDir.x * this.speed * dt;
-    this.position.y += normalizedDir.y * this.speed * dt;
+    // Only apply Y movement if spawn animation is complete
+    if (this.spawnBobComplete) {
+      this.position.y += normalizedDir.y * this.speed * dt;
+    }
 
     // Shooting Logic
     this.shootCooldown -= dt;

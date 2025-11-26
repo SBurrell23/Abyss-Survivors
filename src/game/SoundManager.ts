@@ -164,6 +164,10 @@ export class SoundManager {
         this.playSound(this.getSoundUrl('AUDIO/Custom/sonar-ping-290188.mp3'), volume, 1.0);
     }
 
+    playWaterSplash(volume: number = 0.4) {
+        this.playSound(this.getSoundUrl('AUDIO/Custom/water-splash-199583.mp3'), volume, 1.0);
+    }
+
     playPowerup(volume: number = 0.5) {
         const sounds = [
             this.getSoundUrl('AUDIO/Powerup/SFX_Powerup_Potion_1.wav'),
@@ -234,15 +238,15 @@ export class SoundManager {
         this.playSound(sound, volume, 1.0);
     }
 
-    playDeath(volume: number = 0.5) {
-        // Use a dramatic sound for death - maybe a low explosion or rattle
+    playDeath(volume: number = 0.6) {
+        // Use a dramatic explosion sound for death
         const sounds = [
             this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_1.wav'),
-            this.getSoundUrl('AUDIO/Rattle/Metal/SFX_Rattle_Metal_1.wav'),
-            this.getSoundUrl('AUDIO/Rattle/Metal/SFX_Rattle_Metal_2.wav'),
+            this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_2.wav'),
+            this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_3.wav'),
         ];
         const sound = sounds[Math.floor(Math.random() * sounds.length)];
-        this.playSound(sound, volume, 0.7);
+        this.playSound(sound, volume, 0.9);
     }
 
     playMinigameBounceLeft(volume: number = 0.2) {

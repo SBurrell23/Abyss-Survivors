@@ -58,21 +58,23 @@ export class UpgradeManager {
     
     // Depth-based guarantees
     const guaranteeRareOrLegendary = depth > 250; // At least one purple or orange if depth > 250m
-    const guaranteeLegendary = depth > 750; // At least one orange if depth > 750m
+    // Legendary upgrades only available at 250 meters or deeper
+    const allowLegendary = depth >= 250;
+    const guaranteeLegendary = depth > 750 && allowLegendary; // At least one orange if depth > 750m AND at least 250m deep
     
     while (result.length < count) {
       const rand = Math.random();
       let rarity = 'common';
       
       // Force rare/legendary if we need to guarantee one
-      if (guaranteeLegendary && legendaryCount === 0 && result.length === count - 1) {
+      if (guaranteeLegendary && legendaryCount === 0 && result.length === count - 1 && allowLegendary) {
         rarity = 'legendary'; // Force legendary on last slot if needed
       } else if (guaranteeRareOrLegendary && rareLegendaryCount === 0 && result.length === count - 1) {
-        // Force rare or legendary on last slot if we haven't gotten one yet
-        rarity = Math.random() > 0.5 ? 'legendary' : 'rare';
+        // Force rare on last slot if we haven't gotten one yet (no legendary if depth >= 250)
+        rarity = 'rare';
       } else if (rareLegendaryCount < maxRareLegendary) {
         // Normal random selection
-        if (rand > 0.95) rarity = 'legendary';
+        if (rand > 0.95 && allowLegendary) rarity = 'legendary';
         else if (rand > 0.70) rarity = 'rare';
       }
 
@@ -95,6 +97,10 @@ export class UpgradeManager {
         const allCandidates = this.upgrades.filter(u => {
           // Skip rare/legendary if we've hit the limit
           if ((u.rarity === 'rare' || u.rarity === 'legendary') && rareLegendaryCount >= maxRareLegendary) {
+            return false;
+          }
+          // Don't allow legendary upgrades if depth >= 250 meters
+          if (u.rarity === 'legendary' && !allowLegendary) {
             return false;
           }
           
@@ -159,9 +165,11 @@ export class UpgradeManager {
         }
       }
     } else if (guaranteeRareOrLegendary && rareLegendaryCount === 0) {
-      // Replace a random common upgrade with a rare or legendary
+      // Replace a random common upgrade with a rare (no legendary if depth >= 250)
       const rareLegendaryCandidates = this.upgrades.filter(u => {
         if (u.rarity !== 'rare' && u.rarity !== 'legendary') return false;
+        // Don't allow legendary upgrades if depth >= 250 meters
+        if (u.rarity === 'legendary' && !allowLegendary) return false;
         const playerUpgrade = this.playerUpgrades.get(u.id);
         if (playerUpgrade && u.maxRank) {
           return playerUpgrade.count < u.maxRank;
@@ -206,7 +214,9 @@ export class UpgradeManager {
       if (upgrade.op === 'multiply') {
         p[upgrade.stat] *= upgrade.value!;
       } else {
-        p[upgrade.stat] += upgrade.value!;
+        // For 'add' operation, ensure we're adding the value correctly
+        const currentValue = p[upgrade.stat] || 0;
+        p[upgrade.stat] = currentValue + upgrade.value!;
       }
       
       if (upgrade.stat === 'maxHp') {
