@@ -13,15 +13,15 @@
   },
   {
     "id": "heavy_torpedo",
-    "name": "Heavy Torpedo",
-    "description": "Increases damage by 20%",
+    "name": "Heavy Torpedos",
+    "description": "Increases torpedo damage by 20%",
     "rarity": "common",
-    "icon": "💣",
+    "icon": "💪",
     "type": "stat",
     "stat": "damage",
     "value": 1.2,
     "op": "multiply",
-    "maxRank": 12
+    "maxRank": 10
   },
   {
     "id": "engine_boost",
@@ -38,12 +38,12 @@
   {
     "id": "reinforced_hull",
     "name": "Reinforced Hull",
-    "description": "Increases Max HP by 20",
+    "description": "Increases Max HP by 25",
     "rarity": "common",
     "icon": "🛡️",
     "type": "stat",
     "stat": "maxHp",
-    "value": 20,
+    "value": 25,
     "op": "add",
     "maxRank": 10
   },
@@ -55,7 +55,7 @@
     "icon": "🔱",
     "type": "special",
     "effect": "increment_multishot",
-    "maxRank": 8
+    "maxRank": 7
   },
   {
     "id": "protection_ring",
@@ -65,7 +65,7 @@
     "icon": "💫",
     "type": "special",
     "effect": "increment_protection_ring",
-    "maxRank": 8
+    "maxRank": 9
   },
   {
     "id": "magnet",
@@ -87,7 +87,7 @@
     "icon": "🏹",
     "type": "special",
     "effect": "increment_pierce",
-    "maxRank": 10
+    "maxRank": 6
   },
   {
     "id": "explosive_payload",
@@ -97,7 +97,7 @@
     "icon": "💥",
     "type": "special",
     "effect": "increment_explosion",
-    "maxRank": 10
+    "maxRank": 7
   },
   {
     "id": "homing_tech",
@@ -107,7 +107,7 @@
     "icon": "🔭",
     "type": "special",
     "effect": "increment_homing",
-    "maxRank": 8
+    "maxRank": 5
   },
   {
     "id": "sniper_module",
@@ -117,7 +117,7 @@
     "icon": "🎯",
     "type": "special",
     "effect": "sniper_module",
-    "maxRank": 8
+    "maxRank": 7
   },
   {
     "id": "depth_charge",
@@ -127,17 +127,17 @@
     "icon": "💣",
     "type": "special",
     "effect": "unlock_depth_charge",
-    "maxRank": 8
+    "maxRank": 7
   },
   {
     "id": "critical_circuits",
     "name": "Critical Circuits",
-    "description": "+10% Chance for double damage",
+    "description": "+7% chance for double damage",
     "rarity": "common",
     "icon": "☣️",
     "type": "stat",
     "stat": "critChance",
-    "value": 0.1,
+    "value": 0.07,
     "op": "add",
     "maxRank": 10
   },
@@ -203,7 +203,7 @@
     "icon": "✨",
     "type": "special",
     "effect": "unlock_scatter",
-    "maxRank": 8
+    "maxRank": 6
   },
   {
     "id": "rear_guns",
@@ -223,7 +223,7 @@
     "icon": "🥊",
     "type": "special",
     "effect": "increment_knockback",
-    "maxRank": 10
+    "maxRank": 5
   },
   {
     "id": "cryo_rounds",
@@ -233,7 +233,7 @@
     "icon": "❄️",
     "type": "special",
     "effect": "unlock_freeze",
-    "maxRank": 8
+    "maxRank": 5
   },
   {
     "id": "giant_torpedo",
@@ -255,7 +255,7 @@
     "stat": "xpMultiplier",
     "value": 1.1,
     "op": "multiply",
-    "maxRank": 10
+    "maxRank": 5
   },
   {
     "id": "projectile_size",

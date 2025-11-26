@@ -3,7 +3,7 @@
     "id": "fish_small",
     "name": "Guppy",
     "hp": 5,
-    "speed": 120,
+    "speed": 110,
     "radius": 8,
     "color": "#ff6b6b",
     "xp": 5,
@@ -24,11 +24,11 @@
   {
     "id": "crab",
     "name": "Armored Crab",
-    "hp": 40,
+    "hp": 80,
     "speed": 60,
     "radius": 15,
     "color": "#ff8c00",
-    "xp": 20,
+    "xp": 35,
     "score": 20,
     "weight": 20,
     "behavior": "crab"
@@ -36,8 +36,8 @@
   {
     "id": "eel",
     "name": "Electric Eel",
-    "hp": 20,
-    "speed": 180,
+    "hp": 17,
+    "speed": 170,
     "radius": 10,
     "color": "#ffff00",
     "xp": 25,
