@@ -807,7 +807,7 @@ export class Game {
       const restartBtn = document.getElementById('restart-btn');
       if (restartBtn) {
           restartBtn.onclick = () => {
-             location.reload();
+             this.resetGame();
           };
       }
       
@@ -815,9 +815,160 @@ export class Game {
       const diveAgainBtn = document.getElementById('dive-again-btn');
       if (diveAgainBtn) {
           diveAgainBtn.onclick = () => {
-             location.reload();
+             this.resetGame();
           };
       }
+  }
+  
+  resetGame() {
+      // Hide death screen
+      const deathScreen = document.getElementById('death-screen');
+      if (deathScreen) {
+          deathScreen.style.display = 'none';
+      }
+      
+      // Reset game state
+      this.isGameOver = false;
+      this.isPaused = false;
+      this.score = 0;
+      this.depth = 0;
+      this.upgradeLevel = 1;
+      this.xp = 0;
+      this.xpToNextLevel = 100;
+      
+      // Reset boss fight state
+      this.isBossFight = false;
+      this.bossFightTimer = 0;
+      this.arenaBounds = null;
+      this.kraken = null;
+      this.trenchX = null;
+      
+      // Reset minigame state
+      this.isMinigameActive = false;
+      this.minigameCursor = 0;
+      this.minigameDirection = 1;
+      this.minigameShowingReward = false;
+      this.minigameLastCursor = 0;
+      
+      // Reset camera
+      this.cameraShake.x = 0;
+      this.cameraShake.y = 0;
+      this.shakeIntensity = 0;
+      
+      // Clear all entities
+      this.enemies = [];
+      this.projectiles = [];
+      this.xpOrbs = [];
+      this.depthCharges = [];
+      this.explosions = [];
+      this.treasureChests = [];
+      this.obstacles = [];
+      this.healthPacks = [];
+      this.sonarPulses = [];
+      
+      // Reset upgrade manager (clears all upgrades) - do this BEFORE creating new player
+      this.upgradeManager.playerUpgrades.clear();
+      
+      // Reset player - create new instance
+      this.player = new Player(this, 0, 75);
+      
+      // Explicitly reset all player properties to ensure clean state
+      this.player.hp = 100;
+      this.player.maxHp = 100;
+      this.player.position.x = 0;
+      this.player.position.y = 75;
+      this.player.velocity.x = 0;
+      this.player.velocity.y = 0;
+      this.player.damage = 10;
+      this.player.speed = 250;
+      this.player.radius = 15;
+      this.player.multiShotLevel = 0;
+      this.player.magnetRadius = 100;
+      this.player.pierceCount = 0;
+      this.player.explosionRadius = 0;
+      this.player.homingStrength = 0;
+      this.player.projectileSpeedMult = 1.0;
+      this.player.projectileRangeMult = 1.0;
+      this.player.projectileSizeMult = 1.0;
+      this.player.critChance = 0;
+      this.player.vampireHeal = 0;
+      this.player.damageReduction = 0;
+      this.player.deepPressure = false;
+      this.player.scavengerChance = 0;
+      this.player.xpMultiplier = 1.0;
+      this.player.scatterLevel = 0;
+      this.player.rearGunsLevel = 0;
+      this.player.knockbackStrength = 0;
+      this.player.freezeChance = 0;
+      this.player.giantTorpedoLevel = 0;
+      this.player.shotsFired = 0;
+      this.player.plasmaFieldLevel = 0;
+      this.player.depthChargeLevel = 0;
+      this.player.sonarPulseLevel = 0;
+      this.player.shootCooldown = 0;
+      this.player.attackInterval = 0.5;
+      this.player.depthChargeTimer = 0;
+      this.player.plasmaTimer = 0;
+      this.player.plasmaPulseTimer = 0;
+      this.player.sonarPulseTimer = 0;
+      this.player.damageFlashTimer = 0;
+      this.player.propellerRotation = 0;
+      this.player.vampireCounter = 0;
+      this.player.spawnBobTimer = 0;
+      this.player.spawnTargetY = 75;
+      this.player.spawnBobComplete = false;
+      this.player.bubbles = [];
+      this.player.bubbleSpawnTimer = 0;
+      this.player.isInvulnerable = false;
+      
+      // Initialize camera to center on player
+      this.camera.x = this.player.position.x - this.canvas.width / 2;
+      this.camera.y = this.player.position.y - this.canvas.height / 2;
+      
+      // Ensure camera doesn't show too much sky (clamp top)
+      const minCamY = -0.15 * this.canvas.height;
+      if (this.camera.y < minCamY) {
+          this.camera.y = minCamY;
+      }
+      
+      // Reset seen upgrades
+      this.seenUpgrades.clear();
+      
+      // Reset stats tracking
+      this.totalDamageDealt = 0;
+      this.enemyKills.clear();
+      
+      // Reset timers
+      this.lastTime = performance.now();
+      this.gameStartTime = performance.now();
+      
+      // Reset UI elements visibility
+      const depthMeter = document.getElementById('depth-meter-container');
+      if (depthMeter) depthMeter.style.display = 'block'; // Show depth meter
+      
+      const bossHpBar = document.getElementById('boss-hp-bar-container');
+      if (bossHpBar) bossHpBar.style.display = 'none'; // Hide boss HP bar
+      
+      const bossPhaseIndicator = document.getElementById('boss-phase-indicator');
+      if (bossPhaseIndicator) bossPhaseIndicator.style.display = 'none'; // Hide boss phase indicator
+      
+      // Close any open menus
+      const escMenu = document.getElementById('esc-menu');
+      if (escMenu) escMenu.style.display = 'none';
+      const settingsMenu = document.getElementById('settings-menu');
+      if (settingsMenu) settingsMenu.style.display = 'none';
+      const upgradeMenu = document.getElementById('upgrade-menu');
+      if (upgradeMenu) upgradeMenu.style.display = 'none';
+      
+      // Play water splash sound
+      this.soundManager.playWaterSplash();
+      
+      // Start ambient background music loop
+      const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.15 : 0;
+      this.soundManager.playAmbientLoop(ambientVolume);
+      
+      // Start game loop
+      requestAnimationFrame(this.loop.bind(this));
   }
   
   setupStartScreen() {

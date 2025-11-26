@@ -1,6 +1,7 @@
 import { Vector2 } from '../utils';
 import { Game } from '../Game';
 import { Projectile } from './Projectile';
+import { DepthCharge } from './NewEntities';
 
 export class Player {
   position: Vector2;
@@ -203,8 +204,12 @@ export class Player {
   }
   
   spawnDepthCharge() {
-      // Placeholder: Spawn depth charge entity
-      this.game.player.spawnDepthCharge(); // Hook
+      // Safety check: prevent infinite recursion
+      // The Game class should override this method, but if it hasn't been overridden yet,
+      // we'll spawn directly here as a fallback instead of calling recursively
+      if (this.game && this.game.depthCharges) {
+          this.game.depthCharges.push(new DepthCharge(this.game, this.position.x, this.position.y));
+      }
   }
   
   triggerPlasmaTick() {

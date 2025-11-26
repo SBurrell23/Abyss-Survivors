@@ -381,4 +381,9 @@ export class UpgradeManager {
   getInventory(): PlayerUpgrade[] {
       return Array.from(this.playerUpgrades.values());
   }
+  
+  reset() {
+      this.playerUpgrades.clear();
+      // Don't apply upgrades here - they will be applied when player is recreated
+  }
 }
