@@ -1,11 +1,1 @@
-Right now chests can spawn way too close to each other and way otherto frequently. 
-Make it so that every chest spawns once in a random location within each 100x100 square meter area. (based on the games meters not pixels!!)
-Spawn 100 chests like this at the start of the game with the player location being the center.
-
-Make the explosions more see through as they are a bit too obnoxious at higher levels.
-
-make the downard bombs a bit smaller (the bombs themselves NOT the xplosions)
-
-assign a max rank to each power up, if the player has max rank they cant find any more of that power up, you decide what the max rank should be for each based on the skills power. no max rank should be less then 5
-
-
+Add an Esc menu that pauses the game and shows all of your upgrades and what they do.

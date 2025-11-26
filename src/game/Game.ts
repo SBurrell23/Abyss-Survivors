@@ -110,6 +110,10 @@ export class Game {
         if (e.key === '`') {
             this.toggleDebugMenu();
         }
+        // Toggle Esc Menu
+        if (e.key === 'Escape') {
+            this.toggleEscMenu();
+        }
     });
 
     this.setupRestart();
@@ -125,6 +129,9 @@ export class Game {
     
     // Setup Settings Menu
     this.setupSettingsMenu();
+    
+    // Setup Esc Menu
+    this.setupEscMenu();
     
     // Override Player spawn methods to hook into Game
     this.player.spawnDepthCharge = () => {
@@ -147,16 +154,18 @@ export class Game {
       
       const openMenu = () => {
           if (this.isGameOver) return; // Don't open settings if game is over
+          // Close Esc menu if it's open
+          const escMenu = document.getElementById('esc-menu');
+          if (escMenu && escMenu.style.display === 'flex') {
+              this.closeEscMenu();
+          }
           settingsMenu.style.display = 'flex';
           this.isPaused = true;
           this.soundManager.playUIClick();
       };
       
       const closeMenu = () => {
-          settingsMenu.style.display = 'none';
-          this.isPaused = false;
-          this.lastTime = performance.now();
-          this.soundManager.playUIClick();
+          this.closeSettingsMenu();
       };
       
       settingsBtn.onclick = () => {
@@ -206,6 +215,174 @@ export class Game {
               lastSoundTime = now;
           }
       };
+  }
+  
+  setupEscMenu() {
+      const escMenu = document.getElementById('esc-menu');
+      const closeBtn = document.getElementById('esc-menu-close-btn');
+      
+      if (!escMenu || !closeBtn) return;
+      
+      closeBtn.onclick = () => {
+          this.closeEscMenu();
+      };
+  }
+  
+  toggleEscMenu() {
+      const escMenu = document.getElementById('esc-menu');
+      const settingsMenu = document.getElementById('settings-menu');
+      const upgradeMenu = document.getElementById('upgrade-menu');
+      
+      if (!escMenu) return;
+      
+      // Don't allow opening menu during game over or minigame
+      if (this.isGameOver || this.isMinigameActive) return;
+      
+      // Check if other menus are open - close them first
+      const settingsOpen = settingsMenu && settingsMenu.style.display === 'flex';
+      const upgradeOpen = upgradeMenu && upgradeMenu.style.display === 'flex';
+      
+      if (settingsOpen) {
+          // Close settings menu if Esc is pressed
+          this.closeSettingsMenu();
+          return;
+      }
+      
+      if (upgradeOpen) {
+          // Don't allow closing upgrade menu with Esc (player must select an upgrade)
+          return;
+      }
+      
+      const isOpen = escMenu.style.display === 'flex';
+      
+      if (isOpen) {
+          this.closeEscMenu();
+      } else {
+          this.openEscMenu();
+      }
+  }
+  
+  closeSettingsMenu() {
+      const settingsMenu = document.getElementById('settings-menu');
+      if (!settingsMenu) return;
+      
+      settingsMenu.style.display = 'none';
+      this.isPaused = false;
+      this.lastTime = performance.now();
+      this.soundManager.playUIClick();
+  }
+  
+  openEscMenu() {
+      const escMenu = document.getElementById('esc-menu');
+      const upgradesContainer = document.getElementById('esc-menu-upgrades-container');
+      
+      if (!escMenu || !upgradesContainer) return;
+      
+      // Populate upgrades
+      this.populateEscMenu();
+      
+      // Show menu and pause game
+      escMenu.style.display = 'flex';
+      this.isPaused = true;
+      this.soundManager.playUIClick();
+  }
+  
+  closeEscMenu() {
+      const escMenu = document.getElementById('esc-menu');
+      if (!escMenu) return;
+      
+      escMenu.style.display = 'none';
+      this.isPaused = false;
+      this.lastTime = performance.now();
+      this.soundManager.playUIClick();
+  }
+  
+  populateEscMenu() {
+      const upgradesContainer = document.getElementById('esc-menu-upgrades-container');
+      if (!upgradesContainer) return;
+      
+      upgradesContainer.innerHTML = '';
+      
+      // Get all upgrades (not just acquired ones)
+      const allUpgrades = this.upgradeManager.upgrades;
+      
+      // Get player's upgrades for checking ownership
+      const playerUpgrades = this.upgradeManager.playerUpgrades;
+      
+      // Group upgrades by rarity
+      const upgradesByRarity: { [key: string]: typeof allUpgrades } = {
+          'legendary': [],
+          'rare': [],
+          'common': []
+      };
+      
+      allUpgrades.forEach(upgrade => {
+          if (upgradesByRarity[upgrade.rarity]) {
+              upgradesByRarity[upgrade.rarity].push(upgrade);
+          }
+      });
+      
+      // Sort each group by name
+      Object.keys(upgradesByRarity).forEach(rarity => {
+          upgradesByRarity[rarity].sort((a, b) => a.name.localeCompare(b.name));
+      });
+      
+      // Create sections for each rarity (legendary, rare, common)
+      const rarityOrder = ['legendary', 'rare', 'common'];
+      const rarityTitles = {
+          'legendary': 'Legendary',
+          'rare': 'Rare',
+          'common': 'Common'
+      };
+      
+      rarityOrder.forEach(rarity => {
+          const upgrades = upgradesByRarity[rarity];
+          if (upgrades.length === 0) return;
+          
+          // Create rarity group container
+          const groupContainer = document.createElement('div');
+          groupContainer.className = 'rarity-group';
+          
+          // Create title
+          const title = document.createElement('div');
+          title.className = `rarity-group-title ${rarity}`;
+          title.textContent = rarityTitles[rarity as keyof typeof rarityTitles];
+          groupContainer.appendChild(title);
+          
+          // Create grid for cards
+          const grid = document.createElement('div');
+          grid.className = 'rarity-group-grid';
+          
+          // Create cards for each upgrade in this rarity
+          upgrades.forEach(upgrade => {
+              const playerUpgrade = playerUpgrades.get(upgrade.id);
+              const hasUpgrade = playerUpgrade !== undefined;
+              const count = playerUpgrade ? playerUpgrade.count : 0;
+              const isMaxed = upgrade.maxRank && count >= upgrade.maxRank;
+              
+              const card = document.createElement('div');
+              card.className = `esc-upgrade-card rarity-${upgrade.rarity}${!hasUpgrade ? ' locked' : ''}`;
+              
+              let rankText = '';
+              if (hasUpgrade) {
+                  rankText = isMaxed ? `Rank ${count} (MAX)` : `Rank ${count}${upgrade.maxRank ? ` / ${upgrade.maxRank}` : ''}`;
+              } else {
+                  rankText = 'Not Acquired';
+              }
+              
+              card.innerHTML = `
+                  <div class="esc-upgrade-icon">${upgrade.icon}</div>
+                  <h4>${upgrade.name}</h4>
+                  <p>${upgrade.description}</p>
+                  <div class="esc-upgrade-rank ${isMaxed ? 'maxed' : ''}">${rankText}</div>
+              `;
+              
+              grid.appendChild(card);
+          });
+          
+          groupContainer.appendChild(grid);
+          upgradesContainer.appendChild(groupContainer);
+      });
   }
   
   setupDebugMenu() {

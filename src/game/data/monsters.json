@@ -103,11 +103,11 @@
   {
     "id": "abyss_horror",
     "name": "Abyss Horror",
-    "hp": 666,
+    "hp": 700,
     "speed": 35,
     "radius": 40,
     "color": "#000000",
-    "xp": 3000,
+    "xp": 2500,
     "score": 500,
     "weight": 1
   }
