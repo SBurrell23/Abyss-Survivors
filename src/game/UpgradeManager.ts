@@ -396,9 +396,6 @@ export class UpgradeManager {
           case 'unlock_scatter':
               p.scatterLevel++;
               break;
-          case 'unlock_rear_guns':
-              p.rearGunsLevel++;
-              break;
           case 'increment_knockback':
               p.knockbackStrength += 250; // Pixels per second impulse (+250 per rank)
               break;

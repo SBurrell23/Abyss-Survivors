@@ -162,18 +162,6 @@
     "maxRank": 3
   },
   {
-    "id": "titanium_plating",
-    "name": "Titanium Plating",
-    "description": "Reduces incoming damage by 25%",
-    "rarity": "common",
-    "icon": "⛓️",
-    "type": "stat",
-    "stat": "damageReduction",
-    "value": 0.25,
-    "op": "add",
-    "maxRank": 4
-  },
-  {
     "id": "scavenger_protocol",
     "name": "Scavenger Protocol",
     "description": "+1% chance for enemies to drop a health pack",
@@ -204,16 +192,6 @@
     "type": "special",
     "effect": "unlock_scatter",
     "maxRank": 6
-  },
-  {
-    "id": "rear_guns",
-    "name": "Rear Guns",
-    "description": "Fire a torpedo backwards",
-    "rarity": "common",
-    "icon": "🔙",
-    "type": "special",
-    "effect": "unlock_rear_guns",
-    "maxRank": 8
   },
   {
     "id": "knockback_ammo",
@@ -249,7 +227,7 @@
     "id": "xp_multiplier",
     "name": "XP Multiplier",
     "description": "Increases XP gained by an additional +10%",
-    "rarity": "rare",
+    "rarity": "common",
     "icon": "⭐",
     "type": "stat",
     "stat": "xpMultiplier",

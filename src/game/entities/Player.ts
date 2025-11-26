@@ -32,7 +32,6 @@ export class Player {
   
   // Newest Stats
   scatterLevel: number = 0;
-  rearGunsLevel: number = 0;
   knockbackStrength: number = 0;
   freezeChance: number = 0;
   giantTorpedoLevel: number = 0;
@@ -275,7 +274,6 @@ export class Player {
 
       // Calculate total number of projectiles to adjust sound volume slightly
       let totalProjectiles = 1; // Base shot
-      if (this.rearGunsLevel > 0) totalProjectiles += 1; // Rear guns
       if (this.multiShotLevel > 0) totalProjectiles += this.multiShotLevel * 2; // Multi-shot (2 per level)
       
       // Play sound once - slightly louder with more projectiles (but capped)
@@ -285,12 +283,6 @@ export class Player {
 
       // Base shot
       this.fireProjectile(dir, speed, isGiantShot);
-      
-      // Rear Guns
-      if (this.rearGunsLevel > 0) {
-          const rearDir = dir.scale(-1);
-          this.fireProjectile(rearDir, speed);
-      }
 
       // Multi-shot
       if (this.multiShotLevel > 0) {

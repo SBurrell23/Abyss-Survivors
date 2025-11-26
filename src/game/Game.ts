@@ -1087,7 +1087,6 @@ export class Game {
       this.player.scavengerChance = 0;
       this.player.xpMultiplier = 1.0;
       this.player.scatterLevel = 0;
-      this.player.rearGunsLevel = 0;
       this.player.knockbackStrength = 0;
       this.player.freezeChance = 0;
       this.player.giantTorpedoLevel = 0;
