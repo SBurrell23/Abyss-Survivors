@@ -1085,15 +1085,21 @@ export class Game {
                 const dist = pulse.center.distanceTo(e.position);
                 const enemyRadius = e.radius;
                 
-                // Check if pulse has reached this enemy (pulse radius >= distance to enemy center - enemy radius)
-                // And it wasn't reached in the previous frame
-                if (pulse.radius >= dist - enemyRadius && oldRadius < dist - enemyRadius) {
+                // Check if enemy is currently within the pulse radius
+                // Enemy is hit if pulse radius >= distance to enemy edge (dist - enemyRadius)
+                // This catches enemies even if the pulse expands quickly and "skips over" them
+                if (pulse.radius >= dist - enemyRadius) {
                     // Calculate damage based on distance (decreases with distance)
-                    const damageMultiplier = 1 - (dist / pulse.maxRadius);
+                    // Use the distance when pulse first reached the enemy (when it crossed the edge)
+                    // If pulse already passed through, use the current distance
+                    const hitDistance = oldRadius < dist - enemyRadius ? dist - enemyRadius : dist;
+                    const normalizedDist = Math.min(hitDistance / pulse.maxRadius, 0.95); // Cap at 95% to ensure minimum damage
+                    const damageMultiplier = Math.max(0.1, 1 - normalizedDist); // Ensure multiplier is at least 0.1
                     let damage = pulse.baseDamage * damageMultiplier;
                     
-                    // At max level (baseDamage >= 19), ensure minimum damage is enough to kill guppies (5 HP)
-                    if (pulse.baseDamage >= 19) {
+                    // At max level (level 7), ensure minimum damage is enough to kill guppies (5 HP)
+                    // This prevents far-away enemies from taking too little damage
+                    if (pulse.level >= 7) {
                         damage = Math.max(damage, 5); // Minimum 5 damage at max level
                     }
                     

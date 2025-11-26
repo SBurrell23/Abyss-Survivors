@@ -239,7 +239,8 @@ export class Player {
   triggerSonarPulse() {
       // Create expanding pulse that damages enemies when it reaches them
       // Base damage increases with level, but decreases with distance
-      const baseDamage = 3 + (this.sonarPulseLevel * 2); // 3-19 damage at max level (8 ranks)
+      const damageByRank = [0, 3, 5, 7, 15, 20, 30, 40]; // Rank 0 is unused, ranks 1-7
+      const baseDamage = damageByRank[this.sonarPulseLevel] || 3; // Default to 3 if level is out of range
       const maxRadius = Math.max(this.game.canvas.width, this.game.canvas.height) * 1.5; // Cover entire screen
       
       // Visual effect - create expanding pulse animation
