@@ -52,7 +52,7 @@
     "speed": 85,
     "radius": 18,
     "color": "#800080",
-    "xp": 40,
+    "xp": 50,
     "score": 50,
     "weight": 10
   },
@@ -63,7 +63,7 @@
     "speed": 72,
     "radius": 25,
     "color": "#ff00ff",
-    "xp": 100,
+    "xp": 125,
     "score": 100,
     "weight": 5
   },
@@ -74,7 +74,7 @@
     "speed": 168,
     "radius": 30,
     "color": "#708090",
-    "xp": 200,
+    "xp": 250,
     "score": 150,
     "weight": 3
   },
@@ -107,7 +107,7 @@
     "speed": 40,
     "radius": 40,
     "color": "#000000",
-    "xp": 500,
+    "xp": 999,
     "score": 500,
     "weight": 1
   }

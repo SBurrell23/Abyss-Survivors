@@ -68,9 +68,11 @@ export class UpgradeManager {
     // Special case: guarantee Multi Shot at level 20 if player doesn't have it
     const playerHasMultiShot = this.playerUpgrades.get('multi_shot');
     const guaranteeMultiShotAtLevel20 = level === 20 && (!playerHasMultiShot || playerHasMultiShot.count === 0);
-    // Legendary upgrades only available at 250 meters or deeper (and level > 3), OR if level === 13, OR if guaranteeing Multi Shot at level 20
-    const allowLegendary = !onlyCommonUpgrades && (depth >= 250 || guaranteeLegendaryFromLevel || guaranteeMultiShotAtLevel20);
-    const guaranteeLegendary = (depth > 750 && allowLegendary) || guaranteeLegendaryFromLevel || guaranteeMultiShotAtLevel20; // At least one orange if depth > 750m AND at least 250m deep, OR if level === 13, OR if guaranteeing Multi Shot at level 20
+    // Special case: guarantee legendary on EVEN level ups if depth >= 500m
+    const guaranteeLegendaryOnEvenLevels = !onlyCommonUpgrades && depth >= 500 && level % 2 === 0;
+    // Legendary upgrades only available at 250 meters or deeper (and level > 3), OR if level === 13, OR if guaranteeing Multi Shot at level 20, OR if depth >= 500m on even levels
+    const allowLegendary = !onlyCommonUpgrades && (depth >= 250 || guaranteeLegendaryFromLevel || guaranteeMultiShotAtLevel20 || guaranteeLegendaryOnEvenLevels);
+    const guaranteeLegendary = (depth > 750 && allowLegendary) || guaranteeLegendaryFromLevel || guaranteeMultiShotAtLevel20 || guaranteeLegendaryOnEvenLevels; // At least one orange if depth > 750m AND at least 250m deep, OR if level === 13, OR if guaranteeing Multi Shot at level 20, OR if depth >= 500m on even levels
     
     while (result.length < count) {
       const rand = Math.random();
@@ -100,8 +102,8 @@ export class UpgradeManager {
         // Level restrictions: Cryo Rounds only available at level 10+
         if (u.id === 'cryo_rounds' && level < 10) return false;
         
-        // Depth restrictions: Deep Pressure only available at depth >= 250m
-        if (u.id === 'deep_pressure' && depth < 250) return false;
+        // Depth restrictions: Deep Pressure only available at depth >= 500m
+        if (u.id === 'deep_pressure' && depth < 500) return false;
         
         // Check if upgrade has reached max rank
         const playerUpgrade = this.playerUpgrades.get(u.id);
@@ -128,8 +130,8 @@ export class UpgradeManager {
           // Level restrictions: Cryo Rounds only available at level 10+
           if (u.id === 'cryo_rounds' && level < 10) return false;
           
-          // Depth restrictions: Deep Pressure only available at depth >= 250m
-          if (u.id === 'deep_pressure' && depth < 250) return false;
+          // Depth restrictions: Deep Pressure only available at depth >= 500m
+          if (u.id === 'deep_pressure' && depth < 500) return false;
           
           const playerUpgrade = this.playerUpgrades.get(u.id);
           if (playerUpgrade && u.maxRank) {
@@ -167,7 +169,36 @@ export class UpgradeManager {
     }
     
     // Final check: ensure guarantees are met
-    // First, check if we need to guarantee Multi Shot at level 20
+    // First, check if we need to guarantee legendary on even levels at depth >= 500m
+    if (guaranteeLegendaryOnEvenLevels && legendaryCount === 0) {
+      // Replace a random non-legendary upgrade with a legendary
+      const legendaryCandidates = this.upgrades.filter(u => {
+        if (u.rarity !== 'legendary') return false;
+        // Don't force Multi Shot here if we're also guaranteeing it at level 20
+        if (guaranteeMultiShotAtLevel20 && u.id === 'multi_shot') return false;
+        const playerUpgrade = this.playerUpgrades.get(u.id);
+        if (playerUpgrade && u.maxRank) {
+          return playerUpgrade.count < u.maxRank;
+        }
+        return true;
+      });
+      
+      if (legendaryCandidates.length > 0) {
+        const legendaryPick = legendaryCandidates[Math.floor(Math.random() * legendaryCandidates.length)];
+        // Replace first non-legendary if we have one
+        const replaceIndex = result.findIndex(u => u.rarity !== 'legendary');
+        if (replaceIndex >= 0 && !result.includes(legendaryPick)) {
+          if (result[replaceIndex].rarity === 'rare' || result[replaceIndex].rarity === 'legendary') {
+            rareLegendaryCount--; // Adjust count
+          }
+          result[replaceIndex] = legendaryPick;
+          legendaryCount++;
+          rareLegendaryCount++;
+        }
+      }
+    }
+    
+    // Then check if we need to guarantee Multi Shot at level 20
     if (guaranteeMultiShotAtLevel20) {
       const multiShotUpgrade = this.upgrades.find(u => u.id === 'multi_shot');
       if (multiShotUpgrade && !result.includes(multiShotUpgrade)) {
@@ -195,7 +226,7 @@ export class UpgradeManager {
       }
     }
     
-    if (guaranteeLegendary && legendaryCount === 0 && !guaranteeMultiShotAtLevel20) {
+    if (guaranteeLegendary && legendaryCount === 0 && !guaranteeMultiShotAtLevel20 && !guaranteeLegendaryOnEvenLevels) {
       // Replace a random non-legendary upgrade with a legendary
       const legendaryCandidates = this.upgrades.filter(u => {
         if (u.rarity !== 'legendary') return false;
@@ -231,8 +262,8 @@ export class UpgradeManager {
         if (guaranteeRareFromLevel && u.rarity === 'legendary') return false;
         // Level restrictions: Cryo Rounds only available at level 10+
         if (u.id === 'cryo_rounds' && level < 10) return false;
-        // Depth restrictions: Deep Pressure only available at depth >= 250m
-        if (u.id === 'deep_pressure' && depth < 250) return false;
+        // Depth restrictions: Deep Pressure only available at depth >= 500m
+        if (u.id === 'deep_pressure' && depth < 500) return false;
         const playerUpgrade = this.playerUpgrades.get(u.id);
         if (playerUpgrade && u.maxRank) {
           return playerUpgrade.count < u.maxRank;

@@ -725,6 +725,10 @@ export class Game {
         this.depthCharges.forEach(d => d.update(dt));
         this.depthCharges = this.depthCharges.filter(d => d.active);
         
+        // Update Health Packs
+        this.healthPacks.forEach(hp => hp.update(dt));
+        this.healthPacks = this.healthPacks.filter(hp => hp.active);
+        
         // Collisions
         this.checkCollisions();
         this.updateUI();

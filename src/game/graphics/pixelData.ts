@@ -223,7 +223,7 @@ export const spriteDefinitions: Record<string, SpriteDef> = {
             "GBBBBBBBBBBBBBBG",
             "GBBBBBBLLBBBBBBG",
             "GBBBBBLLLLBBBBBG",
-            "GGGGGGRRRRGGGGGG",
+            "GGGGGGLRRLGGGGGG",
             "GBBBBBLLLLBBBBBG",
             "GBBBBBBLLBBBBBBG",
             "GBBBBBBBBBBBBBBG",
