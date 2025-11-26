@@ -1704,29 +1704,38 @@ export class Game {
 
   spawnInitialChests() {
       const PIXELS_PER_METER = 25;
-      const AREA_SIZE_METERS = 100;
+      const AREA_SIZE_METERS = 100; // Keep cell size at 100 meters
       const AREA_SIZE_PIXELS = AREA_SIZE_METERS * PIXELS_PER_METER; // 2500 pixels
       const TOTAL_CHESTS = 100;
       
-      // Create a 10x10 grid centered on player (0, 0)
-      // Each cell is 100x100 meters
-      const gridSize = Math.ceil(Math.sqrt(TOTAL_CHESTS)); // 10x10 grid
-      const halfGrid = Math.floor(gridSize / 2);
+      // Player starting position (where chests should not spawn)
+      const START_X = 0;
+      const START_Y = 75;
+      const EXCLUSION_RADIUS = 500; // Half of 1000x1000 area
+      
+      // Create a 20x20 grid to cover -25k to +25k pixels (50k / 2500 = 20 cells per side)
+      // Each cell is still 100x100 meters (2500x2500 pixels)
+      const gridSize = 20; // 20x20 grid = 400 cells, covering -25k to +25k
+      const halfGrid = Math.floor(gridSize / 2); // halfGrid = 10, so grid goes from -10 to +9
       
       const usedAreas = new Set<string>();
+      let chestsSpawned = 0;
+      let attempts = 0;
+      const maxAttempts = TOTAL_CHESTS * 10; // Allow more attempts to account for exclusions
       
-      for (let i = 0; i < TOTAL_CHESTS; i++) {
+      while (chestsSpawned < TOTAL_CHESTS && attempts < maxAttempts) {
+          attempts++;
           let gridX, gridY;
-          let attempts = 0;
+          let cellAttempts = 0;
           
           // Find an unused grid cell
           do {
               gridX = Math.floor(Math.random() * gridSize) - halfGrid;
               gridY = Math.floor(Math.random() * gridSize) - halfGrid;
-              attempts++;
-          } while (usedAreas.has(`${gridX},${gridY}`) && attempts < 1000);
+              cellAttempts++;
+          } while (usedAreas.has(`${gridX},${gridY}`) && cellAttempts < 1000);
           
-          if (attempts >= 1000) break; // Safety check
+          if (cellAttempts >= 1000) continue; // Skip if can't find unused cell
           
           usedAreas.add(`${gridX},${gridY}`);
           
@@ -1741,7 +1750,17 @@ export class Game {
           const chestX = cellCenterX + offsetX;
           const chestY = cellCenterY + offsetY;
           
+          // Check if chest is within exclusion zone (1000x1000 pixels around starting position)
+          const distX = Math.abs(chestX - START_X);
+          const distY = Math.abs(chestY - START_Y);
+          
+          if (distX < EXCLUSION_RADIUS && distY < EXCLUSION_RADIUS) {
+              // Skip this chest - it's too close to starting position
+              continue;
+          }
+          
           this.treasureChests.push(new TreasureChest(this, chestX, chestY));
+          chestsSpawned++;
       }
   }
 
