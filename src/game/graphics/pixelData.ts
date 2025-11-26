@@ -59,15 +59,15 @@ export const spriteDefinitions: Record<string, SpriteDef> = {
             "...........GGG..........",
             "..........GGGG..........",
             ".........GGGGG..........",
-            "........GGGGGGGG........",
-            ".......GGGGGGGGGG.......",
-            "......GGGGGGGGGGGG......",
-            ".....GGGGGGWBBGGGGG.....",
-            "....GGGGGGWWWBGGGGGG....",
-            "...GGGGGGWWWWWWGGGGG....",
-            "..GGGGGGWWWWWWWWGGGG....",
-            ".GGGGGGGGWWWWGGGGGGG....",
-            "GGGGGGGGGGGGGGGGGGG.....",
+            "........GGGGGG..........",
+            ".......GGGGGGGGG........",
+            "......GGGGGGGGGGG.......",
+            ".....GGGGGGGWWWGGGG.....",
+            "....GGGGGGGWWWWWGGGG....",
+            "...GGGGGGGWWWBBWWGGGG...",
+            "..GGGGGGGGGWWBBWGGGG....",
+            ".GGGGGGGGGGGWWWGGGG.....",
+            "GGGGGGGGGGGGGGGGG.......",
             "........................"
         ]
     },
@@ -103,7 +103,7 @@ export const spriteDefinitions: Record<string, SpriteDef> = {
     },
     enemy_turtle: {
         size: [20, 18],
-        palette: { '.': 'transparent', 'G': '#228b22', 'S': '#8fbc8f' },
+        palette: { '.': 'transparent', 'G': '#1a6b1a', 'S': '#8fbc8f' },
         data: [
             ".......SSSSS........",
             ".....SSSSSSSS.......",
