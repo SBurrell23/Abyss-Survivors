@@ -1303,20 +1303,46 @@ export class Game {
   }
   
   spawnBossObstacles(centerX: number, centerY: number, arenaSize: number) {
-      // Spawn tentacle barriers around the arena (longer tentacles)
-      const tentacleCount = 8;
-      const tentacleMinDist = 400; // Minimum distance from center
-      const tentacleMaxDist = arenaSize / 2 - 150; // Maximum distance from center
+      // Spawn floating coral obstacles around the arena
+      const coralCount = 20; // More abundant
+      const coralMinDist = 200; // Minimum distance from center
+      const coralMaxDist = arenaSize / 2 - 100; // Maximum distance from center
+      const minCoralSpacing = 180; // Minimum distance between corals (increased for more spread)
+      const coralColors = 6; // Number of coral colors available
       
-      for (let i = 0; i < tentacleCount; i++) {
-          const angle = (Math.PI * 2 / tentacleCount) * i + Math.random() * 0.3;
-          const dist = tentacleMinDist + Math.random() * (tentacleMaxDist - tentacleMinDist);
-          const x = centerX + Math.cos(angle) * dist;
-          const y = centerY + Math.sin(angle) * dist;
+      const spawnedCorals: Array<{x: number, y: number, radius: number}> = [];
+      
+      // Distribute colors evenly using round-robin
+      let colorIndex = 0;
+      
+      for (let i = 0; i < coralCount; i++) {
+          let attempts = 0;
+          let validPosition = false;
+          let x = 0, y = 0, radius = 0;
           
-          // Longer tentacle barriers
-          const radius = 200 + Math.random() * 100; // Much longer (was 40-70)
-          this.obstacles.push(new Obstacle(this, x, y, radius, 'tentacle_barrier'));
+          // Try to find a valid position that's not too close to other corals
+          while (!validPosition && attempts < 50) {
+              const angle = Math.random() * Math.PI * 2;
+              const dist = coralMinDist + Math.random() * (coralMaxDist - coralMinDist);
+              x = centerX + Math.cos(angle) * dist;
+              y = centerY + Math.sin(angle) * dist;
+              radius = 30 + Math.random() * 20; // 30-50 pixels (smaller)
+              
+              // Check if this position is far enough from existing corals
+              validPosition = spawnedCorals.every(coral => {
+                  const distToCoral = Math.sqrt((x - coral.x) ** 2 + (y - coral.y) ** 2);
+                  return distToCoral >= minCoralSpacing + coral.radius + radius;
+              });
+              
+              attempts++;
+          }
+          
+          if (validPosition) {
+              // Assign color in round-robin fashion for even distribution
+              this.obstacles.push(new Obstacle(this, x, y, radius, 'coral', colorIndex));
+              spawnedCorals.push({x, y, radius});
+              colorIndex = (colorIndex + 1) % coralColors; // Cycle through colors
+          }
       }
   }
   
@@ -1489,15 +1515,19 @@ export class Game {
           for (const obstacle of this.obstacles) {
               if (!obstacle.active) continue;
               
-              if (obstacle.type === 'tentacle_barrier') {
-                  // Check collision with tentacle line segments
-                  const time = performance.now() / 500;
+              if (obstacle.type === 'tentacle_barrier' || obstacle.type === 'coral') {
+                  // Check collision with tentacle/coral line segments
+                  const time = performance.now() / (obstacle.type === 'coral' ? 800 : 500);
                   let collided = false;
+                  const armCount = obstacle.type === 'coral' ? obstacle.armCount : 4;
                   
-                  for(let i=0; i<4; i++) {
-                      const angle = (Math.PI * 2 / 4) * i + Math.sin(time + i) * 0.3;
-                      const endX = obstacle.position.x + Math.cos(angle) * obstacle.radius;
-                      const endY = obstacle.position.y + Math.sin(angle) * obstacle.radius;
+                  for(let i=0; i<armCount; i++) {
+                      const angle = (Math.PI * 2 / armCount) * i + Math.sin(time + i) * (obstacle.type === 'coral' ? 0.2 : 0.3);
+                      const armLength = obstacle.type === 'coral' 
+                          ? obstacle.radius * 4 * (0.8 + (i % 3) * 0.15) // Quadrupled arm length (doubled again)
+                          : obstacle.radius;
+                      const endX = obstacle.position.x + Math.cos(angle) * armLength;
+                      const endY = obstacle.position.y + Math.sin(angle) * armLength;
                       
                       // Check distance from player to line segment
                       const lineStart = obstacle.position;
@@ -1519,13 +1549,27 @@ export class Game {
                       
                       // Check distance from player to closest point on line
                       const distToLine = playerPos.distanceTo(closestPoint);
-                      const tentacleWidth = 15; // Line width
+                      const armWidth = obstacle.type === 'coral' ? 4 : 15; // Thinner arms for coral
                       
-                      if (distToLine < this.player.radius + tentacleWidth) {
-                          // Push player away from tentacle
+                      if (distToLine < this.player.radius + armWidth) {
+                          // Push player away from tentacle/coral
                           const pushDir = playerPos.sub(closestPoint).normalize();
                           if (pushDir.length() > 0) {
-                              const overlap = (this.player.radius + tentacleWidth) - distToLine;
+                              const overlap = (this.player.radius + armWidth) - distToLine;
+                              this.player.position = this.player.position.add(pushDir.scale(overlap + 2));
+                          }
+                          collided = true;
+                      }
+                  }
+                  
+                  // Also check collision with center body for coral
+                  if (obstacle.type === 'coral') {
+                      const distToCenter = this.player.position.distanceTo(obstacle.position);
+                      const centerRadius = obstacle.radius * 0.4;
+                      if (distToCenter < this.player.radius + centerRadius) {
+                          const pushDir = this.player.position.sub(obstacle.position).normalize();
+                          if (pushDir.length() > 0) {
+                              const overlap = (this.player.radius + centerRadius) - distToCenter;
                               this.player.position = this.player.position.add(pushDir.scale(overlap + 2));
                           }
                           collided = true;
@@ -1953,13 +1997,13 @@ export class Game {
         });
     }
     
-    this.enemies.forEach(e => e.draw(this.ctx));
-    if (this.kraken && this.isBossFight) this.kraken.draw(this.ctx);
-    
-    // Draw obstacles (boss fight only)
+    // Draw obstacles (boss fight only) - draw BEFORE enemies/kraken so they appear behind
     if (this.isBossFight) {
         this.obstacles.forEach(obs => obs.draw(this.ctx));
     }
+    
+    this.enemies.forEach(e => e.draw(this.ctx));
+    if (this.kraken && this.isBossFight) this.kraken.draw(this.ctx);
     this.projectiles.forEach(p => p.draw(this.ctx));
     this.player.draw(this.ctx);
     

@@ -8,13 +8,21 @@ export class Obstacle {
     active: boolean = true;
     type: 'rock' | 'coral' | 'tentacle_barrier' | 'seaweed';
     slowsMovement: boolean = false; // For seaweed
+    armCount: number = 4; // For coral obstacles
+    colorIndex: number = 0; // For coral color assignment
 
-    constructor(game: Game, x: number, y: number, radius: number, type: 'rock' | 'coral' | 'tentacle_barrier' | 'seaweed' = 'rock') {
+    constructor(game: Game, x: number, y: number, radius: number, type: 'rock' | 'coral' | 'tentacle_barrier' | 'seaweed' = 'rock', colorIndex: number = 0) {
         this.game = game;
         this.position = new Vector2(x, y);
         this.radius = radius;
         this.type = type;
         this.slowsMovement = type === 'seaweed';
+        this.colorIndex = colorIndex;
+        
+        // Random arm count for coral (3-6)
+        if (type === 'coral') {
+            this.armCount = 3 + Math.floor(Math.random() * 4);
+        }
     }
 
     draw(ctx: CanvasRenderingContext2D) {
@@ -59,23 +67,52 @@ export class Obstacle {
             ctx.lineTo(-this.radius * 0.5, this.radius * 0.4);
             ctx.stroke();
         } else if (this.type === 'coral') {
-            // Spiky coral formation
-            ctx.fillStyle = '#8B0000'; // Dark red
+            // Floating coral with arms - use stored armCount (3-6)
+            
+            // Coral colors: off-white/eggshell or other coral colors
+            const coralColors = [
+                '#F5F5DC', // Off-white/eggshell (was dark purple)
+                '#7b1fa2', // Purple
+                '#2E8B57', // Sea-green (was dark red/black)
+                '#A52A2A', // Brown red
+                '#FF1493', // Deep pink
+                '#FF6347'  // Tomato/coral
+            ];
+            // Use stored colorIndex for even distribution
+            const baseColor = coralColors[this.colorIndex % coralColors.length];
+            
+            // Ensure we have a valid color (fallback to sea-green if somehow undefined)
+            const finalColor = baseColor || '#2E8B57';
+            
+            // Draw center body
+            ctx.fillStyle = finalColor;
             ctx.beginPath();
-            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            ctx.arc(0, 0, this.radius * 0.4, 0, Math.PI * 2);
             ctx.fill();
             
-            // Spikes
-            ctx.fillStyle = '#A52A2A';
-            for(let i=0; i<8; i++) {
-                const angle = (Math.PI * 2 / 8) * i;
-                const spikeX = Math.cos(angle) * this.radius;
-                const spikeY = Math.sin(angle) * this.radius;
+            // Draw arms (tentacle-like) - doubled length
+            const time = performance.now() / 800; // Slower animation
+            ctx.strokeStyle = finalColor;
+            ctx.lineWidth = 4;
+            ctx.fillStyle = finalColor;
+            
+            for(let i=0; i<this.armCount; i++) {
+                const angle = (Math.PI * 2 / this.armCount) * i + Math.sin(time + i) * 0.2;
+                const armLength = this.radius * 4 * (0.8 + (i % 3) * 0.15); // Quadrupled arm length (doubled again)
+                const endX = Math.cos(angle) * armLength;
+                const endY = Math.sin(angle) * armLength;
+                
+                // Draw arm as a line with slight curve
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
-                ctx.lineTo(spikeX, spikeY);
-                ctx.lineTo(spikeX * 1.3, spikeY * 1.3);
-                ctx.closePath();
+                const midX = Math.cos(angle) * armLength * 0.5 + Math.sin(time + i) * 5;
+                const midY = Math.sin(angle) * armLength * 0.5;
+                ctx.quadraticCurveTo(midX, midY, endX, endY);
+                ctx.stroke();
+                
+                // Small tip at end
+                ctx.beginPath();
+                ctx.arc(endX, endY, 3, 0, Math.PI * 2);
                 ctx.fill();
             }
         } else if (this.type === 'tentacle_barrier') {
