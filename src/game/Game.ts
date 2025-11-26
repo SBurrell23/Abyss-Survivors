@@ -337,6 +337,7 @@ export class Game {
           lifetime: 5.0, // Pulse expands over 5 seconds (very slow)
           timeAlive: 0,
           baseDamage: baseDamage,
+          level: level, // Store level for damage calculations
           hitEnemies: new Set(), // Track which enemies have been hit
           hitKraken: false // Track if kraken has been hit
       });
@@ -352,6 +353,7 @@ export class Game {
       lifetime: number, 
       timeAlive: number,
       baseDamage: number,
+      level: number,
       hitEnemies: Set<any>,
       hitKraken: boolean
   }> = [];
