@@ -26,8 +26,10 @@ export class XPOrb {
       const dist = this.position.distanceTo(this.game.player.position);
       if (dist < this.game.player.magnetRadius) { // Use player's magnet radius (upgrades affect this)
           const dir = this.game.player.position.sub(this.position).normalize();
-          this.position.x += dir.x * 300 * dt;
-          this.position.y += dir.y * 300 * dt;
+          // Make XP orb speed scale with player speed, ensuring it's always faster (1.5x player speed)
+          const orbSpeed = Math.max(300, this.game.player.speed * 1.5);
+          this.position.x += dir.x * orbSpeed * dt;
+          this.position.y += dir.y * orbSpeed * dt;
       }
   }
 

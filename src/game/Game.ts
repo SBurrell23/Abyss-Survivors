@@ -202,13 +202,14 @@ export class Game {
       const depthVal = document.getElementById('debug-depth-val');
       const powerupsContainer = document.getElementById('debug-powerups');
       const maxAllButton = document.getElementById('debug-max-all-powerups');
+      const levelUpButton = document.getElementById('debug-level-up');
       const maxLegendaryButton = document.getElementById('debug-max-all-legendary');
       const maxRareButton = document.getElementById('debug-max-all-rare');
       const invulnCheckbox = document.getElementById('debug-invulnerable') as HTMLInputElement;
       const speedCheckbox = document.getElementById('debug-speed') as HTMLInputElement;
       const noLevelUpCheckbox = document.getElementById('debug-no-level-up') as HTMLInputElement;
       
-      if (!menu || !depthSlider || !powerupsContainer || !maxAllButton || !maxLegendaryButton || !maxRareButton || !invulnCheckbox || !speedCheckbox || !noLevelUpCheckbox) return;
+      if (!menu || !depthSlider || !powerupsContainer || !maxAllButton || !levelUpButton || !maxLegendaryButton || !maxRareButton || !invulnCheckbox || !speedCheckbox || !noLevelUpCheckbox) return;
       
       // Depth Slider Logic
       depthSlider.oninput = (e: any) => {
@@ -239,6 +240,11 @@ export class Game {
               }
           });
           this.updateUI();
+      };
+      
+      // Level Up Button
+      levelUpButton.onclick = () => {
+          this.levelUp();
       };
       
       // Max All Legendary Power-Ups Button
@@ -281,12 +287,12 @@ export class Game {
       };
       
       // Speed Checkbox (5x speed)
-      const normalSpeed = 200;
+      const normalSpeed = 250;
       speedCheckbox.onchange = (e: any) => {
           if (e.target.checked) {
-              this.player.speed = normalSpeed * 5; // 1000
+              this.player.speed = normalSpeed * 5; // 1250
           } else {
-              this.player.speed = normalSpeed; // 200
+              this.player.speed = normalSpeed; // 250
           }
       };
       
@@ -1646,7 +1652,7 @@ export class Game {
       const optionsContainer = document.getElementById('upgrade-options');
       if (!menu || !optionsContainer) return;
 
-      const options = this.upgradeManager.getRandomUpgrades(5, this.depth);
+      const options = this.upgradeManager.getRandomUpgrades(5, this.depth, this.upgradeLevel);
 
       // Safety check: if no upgrades are available, skip the level up screen
       if (options.length === 0) {
@@ -1786,10 +1792,15 @@ export class Game {
           
           // Show default death screen stats and hide victory stats
           const deathLevel = document.getElementById('death-level');
+          const deathLevelValue = document.getElementById('death-level-value');
           const deathScore = document.getElementById('death-score');
           if (deathLevel) {
               deathLevel.innerText = `${this.depth}m`;
               deathLevel.parentElement!.style.display = 'block';
+          }
+          if (deathLevelValue) {
+              deathLevelValue.innerText = this.upgradeLevel.toString();
+              deathLevelValue.parentElement!.style.display = 'block';
           }
           if (deathScore) {
               deathScore.innerText = this.score.toString();

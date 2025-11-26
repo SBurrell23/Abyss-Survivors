@@ -354,32 +354,5 @@ export const spriteDefinitions: Record<string, SpriteDef> = {
             "...DDDDDD...",
             "............"
         ]
-    },
-    medkit_cross: {
-        size: [16, 16],
-        palette: {
-            '.': 'transparent',
-            'R': '#ff0000', // Red (main body)
-            'W': '#ffffff', // White (cross)
-            'D': '#cc0000', // Dark red (shadow/border)
-        },
-        data: [
-            "................",
-            "................",
-            "....DDDDDDDD....",
-            "...DRRRRRRRRD...",
-            "..DRRRRRRRRRRD..",
-            ".DRRRWRRRRWRRRD.",
-            ".DRRRWRRRRWRRRD.",
-            ".DRRRWRRRRWRRRD.",
-            ".DRRRRRRRRRRRRD.",
-            ".DRRRRRRRRRRRRD.",
-            ".DRRRWRRRRWRRRD.",
-            ".DRRRWRRRRWRRRD.",
-            ".DRRRWRRRRWRRRD.",
-            "..DRRRRRRRRRRD..",
-            "...DDDDDDDDDD...",
-            "................"
-        ]
     }
 }

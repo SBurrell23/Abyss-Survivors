@@ -33,7 +33,7 @@ export class UpgradeManager {
     this.upgrades = upgradesData as unknown as UpgradeDef[];
   }
 
-  getRandomUpgrades(count: number = 5, depth: number = 0): UpgradeDef[] {
+  getRandomUpgrades(count: number = 5, depth: number = 0, level: number = 1): UpgradeDef[] {
     const result: UpgradeDef[] = [];
     
     // Check if all common upgrades are at max rank
@@ -51,36 +51,54 @@ export class UpgradeManager {
       return false;
     });
     
+    // Level restriction: only common upgrades if level <= 3
+    const onlyCommonUpgrades = level <= 3;
+    
     // Track how many rare/legendary upgrades we've selected
     let rareLegendaryCount = 0;
     let legendaryCount = 0;
     const maxRareLegendary = allCommonsMaxed ? count : (depth > 250 ? 1 : 1); // Guarantee at least 1 if depth > 250
     
-    // Depth-based guarantees
-    const guaranteeRareOrLegendary = depth > 250; // At least one purple or orange if depth > 250m
-    // Legendary upgrades only available at 250 meters or deeper
-    const allowLegendary = depth >= 250;
-    const guaranteeLegendary = depth > 750 && allowLegendary; // At least one orange if depth > 750m AND at least 250m deep
+    // Depth-based guarantees (disabled if level <= 3)
+    const guaranteeRareOrLegendary = !onlyCommonUpgrades && depth > 250; // At least one purple or orange if depth > 250m
+    // Level-based guarantee: at least one rare if level >= 7
+    const guaranteeRareFromLevel = level >= 7;
+    // Special case: guarantee legendary ONLY when hitting level 13 exactly
+    const guaranteeLegendaryFromLevel = level === 13;
+    // Legendary upgrades only available at 250 meters or deeper (and level > 3), OR if level === 13
+    const allowLegendary = !onlyCommonUpgrades && (depth >= 250 || guaranteeLegendaryFromLevel);
+    const guaranteeLegendary = (depth > 750 && allowLegendary) || guaranteeLegendaryFromLevel; // At least one orange if depth > 750m AND at least 250m deep, OR if level === 13
     
     while (result.length < count) {
       const rand = Math.random();
       let rarity = 'common';
       
-      // Force rare/legendary if we need to guarantee one
-      if (guaranteeLegendary && legendaryCount === 0 && result.length === count - 1 && allowLegendary) {
-        rarity = 'legendary'; // Force legendary on last slot if needed
-      } else if (guaranteeRareOrLegendary && rareLegendaryCount === 0 && result.length === count - 1) {
-        // Force rare on last slot if we haven't gotten one yet (no legendary if depth >= 250)
-        rarity = 'rare';
-      } else if (rareLegendaryCount < maxRareLegendary) {
-        // Normal random selection
-        if (rand > 0.95 && allowLegendary) rarity = 'legendary';
-        else if (rand > 0.70) rarity = 'rare';
+      // If level <= 3, force common only
+      if (onlyCommonUpgrades) {
+        rarity = 'common';
+      } else {
+        // Force rare/legendary if we need to guarantee one
+        if (guaranteeLegendary && legendaryCount === 0 && result.length === count - 1 && allowLegendary) {
+          rarity = 'legendary'; // Force legendary on last slot if needed
+        } else if ((guaranteeRareOrLegendary || guaranteeRareFromLevel) && rareLegendaryCount === 0 && result.length === count - 1) {
+          // Force rare on last slot if we haven't gotten one yet (no legendary if depth < 250)
+          rarity = 'rare';
+        } else if (rareLegendaryCount < maxRareLegendary) {
+          // Normal random selection
+          if (rand > 0.95 && allowLegendary) rarity = 'legendary';
+          else if (rand > 0.70) rarity = 'rare';
+        }
       }
 
       // Filter out upgrades that have reached max rank
       const candidates = this.upgrades.filter(u => {
         if (u.rarity !== rarity) return false;
+        
+        // Level restrictions: Cryo Rounds only available at level 10+
+        if (u.id === 'cryo_rounds' && level < 10) return false;
+        
+        // Depth restrictions: Deep Pressure only available at depth >= 250m
+        if (u.id === 'deep_pressure' && depth < 250) return false;
         
         // Check if upgrade has reached max rank
         const playerUpgrade = this.playerUpgrades.get(u.id);
@@ -99,10 +117,16 @@ export class UpgradeManager {
           if ((u.rarity === 'rare' || u.rarity === 'legendary') && rareLegendaryCount >= maxRareLegendary) {
             return false;
           }
-          // Don't allow legendary upgrades if depth >= 250 meters
+          // Don't allow legendary upgrades if depth < 250 meters (unless level >= 13)
           if (u.rarity === 'legendary' && !allowLegendary) {
             return false;
           }
+          
+          // Level restrictions: Cryo Rounds only available at level 10+
+          if (u.id === 'cryo_rounds' && level < 10) return false;
+          
+          // Depth restrictions: Deep Pressure only available at depth >= 250m
+          if (u.id === 'deep_pressure' && depth < 250) return false;
           
           const playerUpgrade = this.playerUpgrades.get(u.id);
           if (playerUpgrade && u.maxRank) {
@@ -164,12 +188,18 @@ export class UpgradeManager {
           rareLegendaryCount++;
         }
       }
-    } else if (guaranteeRareOrLegendary && rareLegendaryCount === 0) {
-      // Replace a random common upgrade with a rare (no legendary if depth >= 250)
+    } else if ((guaranteeRareOrLegendary || guaranteeRareFromLevel) && rareLegendaryCount === 0) {
+      // Replace a random common upgrade with a rare (no legendary if depth < 250)
       const rareLegendaryCandidates = this.upgrades.filter(u => {
         if (u.rarity !== 'rare' && u.rarity !== 'legendary') return false;
-        // Don't allow legendary upgrades if depth >= 250 meters
+        // Don't allow legendary upgrades if depth < 250 meters
         if (u.rarity === 'legendary' && !allowLegendary) return false;
+        // For level-based guarantee, prefer rare over legendary
+        if (guaranteeRareFromLevel && u.rarity === 'legendary') return false;
+        // Level restrictions: Cryo Rounds only available at level 10+
+        if (u.id === 'cryo_rounds' && level < 10) return false;
+        // Depth restrictions: Deep Pressure only available at depth >= 250m
+        if (u.id === 'deep_pressure' && depth < 250) return false;
         const playerUpgrade = this.playerUpgrades.get(u.id);
         if (playerUpgrade && u.maxRank) {
           return playerUpgrade.count < u.maxRank;

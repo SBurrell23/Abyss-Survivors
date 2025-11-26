@@ -33,7 +33,7 @@
     "stat": "speed",
     "value": 1.1,
     "op": "multiply",
-    "maxRank": 10
+    "maxRank": 6
   },
   {
     "id": "reinforced_hull",
@@ -248,12 +248,12 @@
   {
     "id": "xp_multiplier",
     "name": "XP Multiplier",
-    "description": "Increases XP gained by 10%",
+    "description": "Increases XP gained by 5%",
     "rarity": "common",
     "icon": "⭐",
     "type": "stat",
     "stat": "xpMultiplier",
-    "value": 1.1,
+    "value": 1.05,
     "op": "multiply",
     "maxRank": 5
   },

@@ -6,7 +6,7 @@ import { SpriteFactory } from '../graphics/SpriteFactory';
 export class Player {
   position: Vector2;
   velocity: Vector2;
-  speed: number = 200; // Pixels per second
+  speed: number = 250; // Pixels per second
   radius: number = 15;
   hp: number = 100;
   maxHp: number = 100;
