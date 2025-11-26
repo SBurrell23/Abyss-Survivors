@@ -1,7 +1,6 @@
 import { Vector2 } from '../utils';
 import { Game } from '../Game';
 import { Projectile } from './Projectile';
-import { SpriteFactory } from '../graphics/SpriteFactory';
 
 export class Player {
   position: Vector2;
