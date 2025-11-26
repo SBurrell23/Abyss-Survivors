@@ -154,7 +154,7 @@
   {
     "id": "vampiric_torpedoes",
     "name": "Vampedoes",
-    "description": "Heal 1 HP per 50 kills",
+    "description": "Heals +1 HP per 50 kills",
     "rarity": "rare",
     "icon": "🧛",
     "type": "special",

@@ -626,7 +626,7 @@ export class Player {
           this.vampireCounter++;
           if (this.vampireCounter >= 50) {
               this.vampireCounter = 0;
-              this.hp = Math.min(this.hp + 1, this.maxHp);
+              this.hp = Math.min(this.hp + this.vampireHeal, this.maxHp);
           }
       }
   }
