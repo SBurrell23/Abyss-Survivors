@@ -712,35 +712,110 @@ export class Game {
       // Check if visible (with buffer)
       if (floorY > this.camera.y + this.canvas.height + 100) return;
 
-      const floorColor = '#3e2723'; // Dark brown
-      const sandColor = '#5d4037'; // Slightly lighter
+      const sandColor = '#5d4037'; // Sand color
+      const deepEarthColor = '#1a100e';
+      const deepEarthColor2 = '#0f0806'; // Slightly darker variant for dithering
       
-      // Draw deep earth
-      ctx.fillStyle = '#1a100e'; 
-      ctx.fillRect(this.camera.x, floorY + 50, this.canvas.width, 2000); 
+      // Seeded random function for consistent but random dithering
+      const seededRandom = (x: number, y: number): number => {
+          const seed = (x * 73856093) ^ (y * 19349663);
+          return ((seed * 83492791) % 2147483647) / 2147483647;
+      };
+      
+      // Draw deep earth with random dithering texture (fully opaque)
+      const ditherStep = 8;
+      const startDitherX = Math.floor(this.camera.x / ditherStep) * ditherStep;
+      const endDitherX = startDitherX + this.canvas.width + ditherStep * 2;
+      const startDitherY = floorY + 50;
+      const endDitherY = startDitherY + 2000;
+      
+      for (let dx = startDitherX; dx <= endDitherX; dx += ditherStep) {
+          for (let dy = startDitherY; dy <= endDitherY; dy += ditherStep) {
+              const rand = seededRandom(dx, dy);
+              ctx.fillStyle = rand > 0.5 ? deepEarthColor : deepEarthColor2;
+              ctx.fillRect(dx, dy, ditherStep + 1, ditherStep + 1); // +1 to ensure no gaps
+          }
+      } 
 
-      // Draw Sand Layer (base) - but skip trench area
-      ctx.fillStyle = floorColor;
+      // Draw Sand Layer with dithering and gradient - but skip trench area
+      const sandDitherStep = 6;
+      const sandStartX = Math.floor(this.camera.x / sandDitherStep) * sandDitherStep;
+      const sandEndX = sandStartX + this.canvas.width + sandDitherStep;
+      const sandLayerHeight = 50;
+      
       if (this.trenchX !== null) {
           const trenchWidth = 500;
           const trenchLeft = this.trenchX - trenchWidth/2;
           const trenchRight = this.trenchX + trenchWidth/2;
           
-          // Draw left side of sand
-          if (trenchLeft > this.camera.x) {
-              ctx.fillRect(this.camera.x, floorY, trenchLeft - this.camera.x, 50);
-          }
-          // Draw right side of sand
-          if (trenchRight < this.camera.x + this.canvas.width) {
-              ctx.fillRect(trenchRight, floorY, (this.camera.x + this.canvas.width) - trenchRight, 50);
+          // Draw sand with dithering on left side
+          for (let sx = sandStartX; sx <= sandEndX; sx += sandDitherStep) {
+              if (sx + sandDitherStep/2 >= trenchLeft && sx + sandDitherStep/2 <= trenchRight) continue;
+              if (sx + sandDitherStep < this.camera.x || sx > this.camera.x + this.canvas.width) continue;
+              
+              for (let sy = floorY; sy < floorY + sandLayerHeight; sy += sandDitherStep) {
+                  const noise = Math.sin(sx * 0.15 + sy * 0.1) + Math.sin(sx * 0.31 + sy * 0.27) * 0.5;
+                  // Gradient: darker towards bottom (blend with deep earth)
+                  const depthFactor = (sy - floorY) / sandLayerHeight; // 0 at top, 1 at bottom
+                  const blendFactor = depthFactor * depthFactor; // Quadratic for smoother transition
+                  
+                  // Blend sand color with deep earth color based on depth
+                  const r1 = parseInt(sandColor.slice(1, 3), 16);
+                  const g1 = parseInt(sandColor.slice(3, 5), 16);
+                  const b1 = parseInt(sandColor.slice(5, 7), 16);
+                  const r2 = parseInt(deepEarthColor.slice(1, 3), 16);
+                  const g2 = parseInt(deepEarthColor.slice(3, 5), 16);
+                  const b2 = parseInt(deepEarthColor.slice(5, 7), 16);
+                  
+                  const r = Math.floor(r1 + (r2 - r1) * blendFactor);
+                  const g = Math.floor(g1 + (g2 - g1) * blendFactor);
+                  const b = Math.floor(b1 + (b2 - b1) * blendFactor);
+                  
+                  // Add dithering variation
+                  const ditherVariation = noise * 0.1;
+                  const finalR = Math.max(0, Math.min(255, r + ditherVariation * 20));
+                  const finalG = Math.max(0, Math.min(255, g + ditherVariation * 20));
+                  const finalB = Math.max(0, Math.min(255, b + ditherVariation * 20));
+                  
+                  ctx.fillStyle = `rgb(${Math.floor(finalR)}, ${Math.floor(finalG)}, ${Math.floor(finalB)})`;
+                  ctx.fillRect(sx, sy, sandDitherStep + 1, sandDitherStep + 1); // +1 to ensure no gaps
+              }
           }
           
           // Draw trench hole (dark void)
           ctx.fillStyle = '#000010'; // Almost black blue
           ctx.fillRect(trenchLeft, floorY, trenchWidth, 2000);
       } else {
-          // No trench yet, draw full sand layer
-          ctx.fillRect(this.camera.x, floorY, this.canvas.width, 50);
+          // No trench yet, draw full sand layer with dithering
+          for (let sx = sandStartX; sx <= sandEndX; sx += sandDitherStep) {
+              for (let sy = floorY; sy < floorY + sandLayerHeight; sy += sandDitherStep) {
+                  const noise = Math.sin(sx * 0.15 + sy * 0.1) + Math.sin(sx * 0.31 + sy * 0.27) * 0.5;
+                  // Gradient: darker towards bottom
+                  const depthFactor = (sy - floorY) / sandLayerHeight;
+                  const blendFactor = depthFactor * depthFactor;
+                  
+                  // Blend sand color with deep earth color
+                  const r1 = parseInt(sandColor.slice(1, 3), 16);
+                  const g1 = parseInt(sandColor.slice(3, 5), 16);
+                  const b1 = parseInt(sandColor.slice(5, 7), 16);
+                  const r2 = parseInt(deepEarthColor.slice(1, 3), 16);
+                  const g2 = parseInt(deepEarthColor.slice(3, 5), 16);
+                  const b2 = parseInt(deepEarthColor.slice(5, 7), 16);
+                  
+                  const r = Math.floor(r1 + (r2 - r1) * blendFactor);
+                  const g = Math.floor(g1 + (g2 - g1) * blendFactor);
+                  const b = Math.floor(b1 + (b2 - b1) * blendFactor);
+                  
+                  // Add dithering variation
+                  const ditherVariation = noise * 0.1;
+                  const finalR = Math.max(0, Math.min(255, r + ditherVariation * 20));
+                  const finalG = Math.max(0, Math.min(255, g + ditherVariation * 20));
+                  const finalB = Math.max(0, Math.min(255, b + ditherVariation * 20));
+                  
+                  ctx.fillStyle = `rgb(${Math.floor(finalR)}, ${Math.floor(finalG)}, ${Math.floor(finalB)})`;
+                  ctx.fillRect(sx, sy, sandDitherStep + 1, sandDitherStep + 1); // +1 to ensure no gaps
+              }
+          }
       }
 
       // Procedural details
@@ -772,33 +847,118 @@ export class Game {
           // Variation in floor height
           const height = 10 + noise * 5;
           
-          // Draw uneven sand top
-          ctx.fillStyle = sandColor;
-          ctx.fillRect(x, floorY - height, step + 1, 50 + height);
-
-          // Occasional Rock/Debris
-          // Use a different frequency for rocks
-          if (Math.abs(Math.sin(x * 0.987)) > 0.8) {
-               ctx.fillStyle = '#251612'; // Rock color
-               const rockSize = 15 + Math.sin(x) * 5;
-               ctx.beginPath();
-               ctx.arc(x + step/2, floorY - height, rockSize, 0, Math.PI, true);
-               ctx.fill();
-          }
+          // Draw uneven sand top with random dithering
+          const topSandDitherStep = 4;
+          const topSandStartX = x;
+          const topSandEndX = x + step + 1;
+          const topSandStartY = floorY - height;
+          const topSandEndY = floorY + 50 + height;
           
-          // Seaweed-like strands
-          if (Math.abs(Math.cos(x * 0.456)) > 0.9) {
-              ctx.strokeStyle = '#2e7d32'; // Dark green
-              ctx.lineWidth = 3;
+          for (let tsx = topSandStartX; tsx < topSandEndX; tsx += topSandDitherStep) {
+              for (let tsy = topSandStartY; tsy < topSandEndY; tsy += topSandDitherStep) {
+                  const rand = seededRandom(tsx, tsy);
+                  
+                  // Calculate how close this pixel is to the bottom of the seabed
+                  // The seabed bottom is at floorY + 50, so pixels closer to that should be darker
+                  const seabedBottom = floorY + 50;
+                  const distanceFromBottom = Math.max(0, seabedBottom - tsy);
+                  const maxDistance = 50 + height; // Maximum distance (top of sand to bottom)
+                  const depthFactor = 1 - (distanceFromBottom / maxDistance); // 0 at top, 1 at bottom
+                  const blendFactor = depthFactor * depthFactor; // Quadratic for smoother transition
+                  
+                  // Blend sand color with deep earth color based on depth
+                  const r1 = parseInt(sandColor.slice(1, 3), 16);
+                  const g1 = parseInt(sandColor.slice(3, 5), 16);
+                  const b1 = parseInt(sandColor.slice(5, 7), 16);
+                  const r2 = parseInt(deepEarthColor.slice(1, 3), 16);
+                  const g2 = parseInt(deepEarthColor.slice(3, 5), 16);
+                  const b2 = parseInt(deepEarthColor.slice(5, 7), 16);
+                  
+                  const baseR = Math.floor(r1 + (r2 - r1) * blendFactor);
+                  const baseG = Math.floor(g1 + (g2 - g1) * blendFactor);
+                  const baseB = Math.floor(b1 + (b2 - b1) * blendFactor);
+                  
+                  // Add dithering variation on top of the gradient
+                  const variation = (rand - 0.5) * 15; // ±15 color variation
+                  const finalR = Math.max(0, Math.min(255, baseR + variation));
+                  const finalG = Math.max(0, Math.min(255, baseG + variation));
+                  const finalB = Math.max(0, Math.min(255, baseB + variation));
+                  
+                  ctx.fillStyle = `rgb(${Math.floor(finalR)}, ${Math.floor(finalG)}, ${Math.floor(finalB)})`;
+                  ctx.fillRect(tsx, tsy, topSandDitherStep + 1, topSandDitherStep + 1); // +1 to ensure no gaps
+              }
+          }
+
+          // Seaweed-like strands (9 strands total - tripled amount with random green shades and thickness)
+          // Helper function to generate random seaweed green color
+          const getSeaweedColor = (seed: number): string => {
+              const rand = seededRandom(x, seed);
+              // Generate random shades of green: darker greens (seaweed range)
+              const baseGreen = 30 + rand * 60; // 30-90 (darker greens)
+              const r = Math.floor(20 + rand * 15); // 20-35 (slight red tint)
+              const g = Math.floor(baseGreen);
+              const b = Math.floor(25 + rand * 20); // 25-45 (slight blue tint)
+              return `rgb(${r}, ${g}, ${b})`;
+          };
+          
+          // Helper function to draw a single seaweed strand
+          const drawSeaweed = (seed: number, baseX: number, baseY: number, offset: number, swayMultiplier: number, phase: number) => {
+              const rand = seededRandom(x, seed);
+              const length = 25 + rand * 45; // Random length between 25-70
+              const thickness = 1.5 + rand * 2.5; // Random thickness between 1.5-4
+              ctx.strokeStyle = getSeaweedColor(seed);
+              ctx.lineWidth = thickness;
               ctx.beginPath();
-              ctx.moveTo(x + step/2, floorY - height);
-              // Swaying effect using time
-              const sway = Math.sin(performance.now() / 500 + x) * 10;
+              ctx.moveTo(baseX + offset, baseY);
+              const sway = Math.sin(performance.now() / (500 + phase * 50) + x * (0.5 + phase * 0.2)) * (8 + phase * 2);
+              const midY = baseY - Math.max(length * 0.6, 20);
+              const topY = baseY - Math.max(length, 25);
               ctx.quadraticCurveTo(
-                  x + step/2 + sway, floorY - height - 20, 
-                  x + step/2 + sway * 1.5, floorY - height - 40
+                  baseX + offset + sway, midY, 
+                  baseX + offset + sway * swayMultiplier, topY
               );
               ctx.stroke();
+          };
+          
+          // First group of 3 strands
+          if (Math.abs(Math.cos(x * 0.456)) > 0.80) {
+              drawSeaweed(0, x + step/2, floorY - height, 0, 1.5, 0);
+          }
+          if (Math.abs(Math.sin(x * 0.456)) > 0.80) {
+              const offset1 = Math.sin(x * 0.5) * 12;
+              drawSeaweed(3, x + step/2, floorY - height, offset1, 1.4, 1);
+          }
+          if (Math.abs(Math.cos(x * 0.456 + Math.PI/3)) > 0.80) {
+              const offset2 = Math.cos(x * 0.7) * 10;
+              drawSeaweed(6, x + step/2, floorY - height, offset2, 1.6, 2);
+          }
+          
+          // Second group of 3 strands
+          if (Math.abs(Math.sin(x * 0.789)) > 0.80) {
+              const offset3 = Math.sin(x * 0.5) * 15;
+              drawSeaweed(1, x + step/2, floorY - height, offset3, 1.3, 3);
+          }
+          if (Math.abs(Math.cos(x * 0.789)) > 0.80) {
+              const offset4 = Math.cos(x * 0.6) * 14;
+              drawSeaweed(4, x + step/2, floorY - height, offset4, 1.5, 4);
+          }
+          if (Math.abs(Math.sin(x * 0.789 + Math.PI/4)) > 0.80) {
+              const offset5 = Math.sin(x * 0.8) * 11;
+              drawSeaweed(7, x + step/2, floorY - height, offset5, 1.4, 5);
+          }
+          
+          // Third group of 3 strands
+          if (Math.abs(Math.cos(x * 0.321)) > 0.80) {
+              const offset6 = Math.cos(x * 0.7) * 12;
+              drawSeaweed(2, x + step/2, floorY - height, offset6, 1.4, 6);
+          }
+          if (Math.abs(Math.sin(x * 0.321)) > 0.80) {
+              const offset7 = Math.sin(x * 0.9) * 13;
+              drawSeaweed(5, x + step/2, floorY - height, offset7, 1.3, 7);
+          }
+          if (Math.abs(Math.cos(x * 0.321 + Math.PI/6)) > 0.80) {
+              const offset8 = Math.cos(x * 0.4) * 9;
+              drawSeaweed(8, x + step/2, floorY - height, offset8, 1.5, 8);
           }
       }
   }
