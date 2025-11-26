@@ -229,7 +229,7 @@
     "id": "cryo_rounds",
     "name": "Cryo Rounds",
     "description": "Chance to freeze enemies",
-    "rarity": "rare",
+    "rarity": "common",
     "icon": "❄️",
     "type": "special",
     "effect": "unlock_freeze",
