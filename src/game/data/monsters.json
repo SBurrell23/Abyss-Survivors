@@ -24,11 +24,11 @@
   {
     "id": "crab",
     "name": "Armored Crab",
-    "hp": 70,
+    "hp": 45,
     "speed": 60,
     "radius": 15,
     "color": "#ff8c00",
-    "xp": 35,
+    "xp": 45,
     "score": 20,
     "weight": 20,
     "behavior": "crab"
@@ -40,7 +40,7 @@
     "speed": 170,
     "radius": 10,
     "color": "#ffff00",
-    "xp": 35,
+    "xp": 45,
     "score": 30,
     "weight": 15,
     "behavior": "snake"
@@ -96,7 +96,7 @@
     "speed": 132,
     "radius": 22,
     "color": "#4682b4",
-    "xp": 60,
+    "xp": 75,
     "score": 60,
     "weight": 8
   },
