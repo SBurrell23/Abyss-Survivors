@@ -1,8 +1,11 @@
 export class SoundManager {
     private masterVolume: number = 1.0;
+    private ambientSoundEnabled: boolean = true;
     private audioContext: AudioContext | null = null;
     private soundCache: Map<string, ArrayBuffer> = new Map();
     private playingSounds: Set<AudioBufferSourceNode> = new Set();
+    private ambientSoundSource: AudioBufferSourceNode | null = null;
+    private ambientGainNode: GainNode | null = null;
 
     constructor() {
         // Initialize audio context on first user interaction
@@ -21,6 +24,8 @@ export class SoundManager {
         this.masterVolume = Math.max(0, Math.min(1, volume));
         // Store in localStorage
         localStorage.setItem('masterVolume', this.masterVolume.toString());
+        // Update ambient sound volume
+        this.updateAmbientVolume();
     }
 
     getMasterVolume(): number {
@@ -267,11 +272,106 @@ export class SoundManager {
         );
     }
 
+    async playAmbientLoop(volume: number = 0.15) {
+        if (!this.audioContext) {
+            await this.initAudioContext();
+            if (!this.audioContext) return;
+        }
+
+        // Resume audio context if suspended
+        if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+        }
+
+        // Stop existing ambient sound if playing
+        if (this.ambientSoundSource) {
+            try {
+                this.ambientSoundSource.stop();
+            } catch (e) {
+                // Ignore if already stopped
+            }
+            this.ambientSoundSource = null;
+        }
+
+        try {
+            const path = this.getSoundUrl('AUDIO/Custom/underwater-ambiencewav-14428.mp3');
+            const arrayBuffer = await this.loadSound(path);
+            const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
+            
+            const playLoop = () => {
+                if (!this.audioContext) return;
+                
+                const source = this.audioContext.createBufferSource();
+                const gainNode = this.audioContext.createGain();
+                
+                source.buffer = audioBuffer;
+                source.loop = true;
+                gainNode.gain.value = volume * this.masterVolume;
+                
+                source.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                source.onended = () => {
+                    // Restart loop if it ends (shouldn't happen with loop=true, but safety)
+                    if (this.ambientSoundSource === source) {
+                        playLoop();
+                    }
+                };
+                
+                this.ambientSoundSource = source;
+                this.ambientGainNode = gainNode;
+                source.start(0);
+            };
+            
+            playLoop();
+        } catch (error) {
+            console.error(`Error playing ambient sound:`, error);
+        }
+    }
+
+    stopAmbientLoop() {
+        if (this.ambientSoundSource) {
+            try {
+                this.ambientSoundSource.stop();
+            } catch (e) {
+                // Ignore if already stopped
+            }
+            this.ambientSoundSource = null;
+            this.ambientGainNode = null;
+        }
+    }
+
+    // Update ambient volume when master volume changes
+    updateAmbientVolume() {
+        if (this.ambientGainNode) {
+            // Set to 0 if disabled, otherwise 15% of master volume
+            const baseVolume = this.ambientSoundEnabled ? 0.15 : 0;
+            this.ambientGainNode.gain.value = baseVolume * this.masterVolume;
+        }
+    }
+
+    getAmbientSoundEnabled(): boolean {
+        return this.ambientSoundEnabled;
+    }
+
+    setAmbientSoundEnabled(enabled: boolean) {
+        this.ambientSoundEnabled = enabled;
+        // Store in localStorage
+        localStorage.setItem('ambientSoundEnabled', enabled.toString());
+        // Update ambient sound volume immediately
+        this.updateAmbientVolume();
+    }
+
     // Load volume from localStorage on init
     loadSettings() {
         const saved = localStorage.getItem('masterVolume');
         if (saved !== null) {
             this.masterVolume = parseFloat(saved);
+        }
+        
+        const savedAmbient = localStorage.getItem('ambientSoundEnabled');
+        if (savedAmbient !== null) {
+            this.ambientSoundEnabled = savedAmbient === 'true';
         }
     }
 }

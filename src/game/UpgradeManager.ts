@@ -65,9 +65,12 @@ export class UpgradeManager {
     const guaranteeRareFromLevel = level >= 7;
     // Special case: guarantee legendary ONLY when hitting level 13 exactly
     const guaranteeLegendaryFromLevel = level === 13;
-    // Legendary upgrades only available at 250 meters or deeper (and level > 3), OR if level === 13
-    const allowLegendary = !onlyCommonUpgrades && (depth >= 250 || guaranteeLegendaryFromLevel);
-    const guaranteeLegendary = (depth > 750 && allowLegendary) || guaranteeLegendaryFromLevel; // At least one orange if depth > 750m AND at least 250m deep, OR if level === 13
+    // Special case: guarantee Multi Shot at level 20 if player doesn't have it
+    const playerHasMultiShot = this.playerUpgrades.get('multi_shot');
+    const guaranteeMultiShotAtLevel20 = level === 20 && (!playerHasMultiShot || playerHasMultiShot.count === 0);
+    // Legendary upgrades only available at 250 meters or deeper (and level > 3), OR if level === 13, OR if guaranteeing Multi Shot at level 20
+    const allowLegendary = !onlyCommonUpgrades && (depth >= 250 || guaranteeLegendaryFromLevel || guaranteeMultiShotAtLevel20);
+    const guaranteeLegendary = (depth > 750 && allowLegendary) || guaranteeLegendaryFromLevel || guaranteeMultiShotAtLevel20; // At least one orange if depth > 750m AND at least 250m deep, OR if level === 13, OR if guaranteeing Multi Shot at level 20
     
     while (result.length < count) {
       const rand = Math.random();
@@ -164,10 +167,40 @@ export class UpgradeManager {
     }
     
     // Final check: ensure guarantees are met
-    if (guaranteeLegendary && legendaryCount === 0) {
+    // First, check if we need to guarantee Multi Shot at level 20
+    if (guaranteeMultiShotAtLevel20) {
+      const multiShotUpgrade = this.upgrades.find(u => u.id === 'multi_shot');
+      if (multiShotUpgrade && !result.includes(multiShotUpgrade)) {
+        // Check if Multi Shot is available (not maxed)
+        const playerUpgrade = this.playerUpgrades.get('multi_shot');
+        const isAvailable = !playerUpgrade || !multiShotUpgrade.maxRank || playerUpgrade.count < multiShotUpgrade.maxRank;
+        
+        if (isAvailable) {
+          // Replace a random upgrade with Multi Shot
+          const replaceIndex = result.findIndex(u => u.id !== 'multi_shot');
+          if (replaceIndex >= 0) {
+            // Adjust counts if replacing a rare/legendary
+            if (result[replaceIndex].rarity === 'rare' || result[replaceIndex].rarity === 'legendary') {
+              rareLegendaryCount--;
+            }
+            if (result[replaceIndex].rarity === 'legendary') {
+              legendaryCount--;
+            }
+            // Add Multi Shot
+            result[replaceIndex] = multiShotUpgrade;
+            legendaryCount++;
+            rareLegendaryCount++;
+          }
+        }
+      }
+    }
+    
+    if (guaranteeLegendary && legendaryCount === 0 && !guaranteeMultiShotAtLevel20) {
       // Replace a random non-legendary upgrade with a legendary
       const legendaryCandidates = this.upgrades.filter(u => {
         if (u.rarity !== 'legendary') return false;
+        // Don't force Multi Shot here if we already handled it above
+        if (guaranteeMultiShotAtLevel20 && u.id === 'multi_shot') return false;
         const playerUpgrade = this.playerUpgrades.get(u.id);
         if (playerUpgrade && u.maxRank) {
           return playerUpgrade.count < u.maxRank;

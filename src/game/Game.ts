@@ -140,9 +140,10 @@ export class Game {
       const settingsMenu = document.getElementById('settings-menu');
       const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
       const volumeValue = document.getElementById('volume-value');
+      const ambientCheckbox = document.getElementById('ambient-sound-checkbox') as HTMLInputElement;
       const closeBtn = document.getElementById('settings-close-btn');
       
-      if (!settingsBtn || !settingsMenu || !volumeSlider || !volumeValue || !closeBtn) return;
+      if (!settingsBtn || !settingsMenu || !volumeSlider || !volumeValue || !ambientCheckbox || !closeBtn) return;
       
       const openMenu = () => {
           if (this.isGameOver) return; // Don't open settings if game is over
@@ -174,6 +175,17 @@ export class Game {
       const savedVolume = this.soundManager.getMasterVolume();
       volumeSlider.value = (savedVolume * 100).toString();
       volumeValue.innerText = `${Math.round(savedVolume * 100)}%`;
+      
+      // Update ambient sound checkbox from saved value
+      const ambientEnabled = this.soundManager.getAmbientSoundEnabled();
+      ambientCheckbox.checked = ambientEnabled;
+      
+      // Handle ambient sound checkbox change
+      ambientCheckbox.onchange = () => {
+          const enabled = ambientCheckbox.checked;
+          this.soundManager.setAmbientSoundEnabled(enabled);
+          this.soundManager.playUIClick();
+      };
       
       // Throttle sound playback to avoid too many sounds when dragging
       let lastSoundTime = 0;
@@ -605,6 +617,9 @@ export class Game {
     this.gameStartTime = performance.now();
     // Play water splash sound when game starts
     this.soundManager.playWaterSplash();
+    // Start ambient background music loop (volume will be set based on settings)
+    const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.15 : 0;
+    this.soundManager.playAmbientLoop(ambientVolume);
     requestAnimationFrame(this.loop.bind(this));
   }
 
