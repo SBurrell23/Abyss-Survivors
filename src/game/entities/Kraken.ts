@@ -11,6 +11,7 @@ export class Kraken {
     hp: number = 15000; // Phase 1 HP
     maxHp: number = 15000; // Current phase max HP
     active: boolean = true;
+    isKraken: boolean = true; // Flag to identify Kraken (immune to knockback)
     
     spawnTimer: number = 0;
     phase: number = 1; // Boss phases: 1, 2, 3

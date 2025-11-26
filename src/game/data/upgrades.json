@@ -2,19 +2,19 @@
   {
     "id": "rapid_fire",
     "name": "Rapid Fire",
-    "description": "Increases firing speed by 10%",
+    "description": "Increases firing speed by 12%",
     "rarity": "common",
     "icon": "⚡",
     "type": "stat",
     "stat": "attackInterval",
-    "value": 0.9,
+    "value": 0.88,
     "op": "multiply",
-    "maxRank": 12
+    "maxRank": 10
   },
   {
     "id": "heavy_torpedo",
     "name": "Heavy Torpedos",
-    "description": "Increases torpedo damage by 20%",
+    "description": "Torpedo damage increased by 20%",
     "rarity": "common",
     "icon": "💪",
     "type": "stat",
@@ -59,13 +59,13 @@
   },
   {
     "id": "protection_ring",
-    "name": "Circling Torpedoes",
-    "description": "Spawns torpedoes that circle around you",
-    "rarity": "rare",
+    "name": "Circling Mines",
+    "description": "Spawns damaging mines that circle around you",
+    "rarity": "common",
     "icon": "💫",
     "type": "special",
     "effect": "increment_protection_ring",
-    "maxRank": 7
+    "maxRank": 5
   },
   {
     "id": "magnet",
@@ -144,22 +144,22 @@
   {
     "id": "plasma_field",
     "name": "Plasma Field",
-    "description": "Creates a persistent damaging aura around around your sub",
+    "description": "Creates a persistent damaging aura around your sub",
     "rarity": "rare",
     "icon": "⚛️",
     "type": "special",
     "effect": "unlock_plasma",
-    "maxRank": 8
+    "maxRank": 9
   },
   {
     "id": "vampiric_torpedoes",
     "name": "Vampedoes",
     "description": "Heal 1 HP per 50 kills",
-    "rarity": "legendary",
+    "rarity": "rare",
     "icon": "🧛",
     "type": "special",
     "effect": "unlock_vampire",
-    "maxRank": 5
+    "maxRank": 3
   },
   {
     "id": "titanium_plating",
@@ -176,7 +176,7 @@
   {
     "id": "scavenger_protocol",
     "name": "Scavenger Protocol",
-    "description": "1% chance for enemies to drop a health pack",
+    "description": "+1% chance for enemies to drop a health pack",
     "rarity": "common",
     "icon": "💊",
     "type": "stat",
@@ -189,11 +189,11 @@
     "id": "deep_pressure",
     "name": "Deep Pressure",
     "description": "Damage increases with depth (50% more at 1000m)",
-    "rarity": "rare",
+    "rarity": "legendary",
     "icon": "⏬",
     "type": "special",
     "effect": "unlock_deep_pressure",
-    "maxRank": 5
+    "maxRank": 1
   },
   {
     "id": "scatter_shot",
@@ -223,17 +223,17 @@
     "icon": "🥊",
     "type": "special",
     "effect": "increment_knockback",
-    "maxRank": 5
+    "maxRank": 3
   },
   {
     "id": "cryo_rounds",
     "name": "Cryo Rounds",
-    "description": "Chance to freeze enemies",
+    "description": "+20% chance to chill enemies",
     "rarity": "common",
     "icon": "❄️",
     "type": "special",
     "effect": "unlock_freeze",
-    "maxRank": 5
+    "maxRank": 4
   },
   {
     "id": "giant_torpedo",
@@ -248,8 +248,8 @@
   {
     "id": "xp_multiplier",
     "name": "XP Multiplier",
-    "description": "Increases XP gained by an additional 10%",
-    "rarity": "common",
+    "description": "Increases XP gained by an additional +10%",
+    "rarity": "rare",
     "icon": "⭐",
     "type": "stat",
     "stat": "xpMultiplier",

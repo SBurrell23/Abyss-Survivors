@@ -7,7 +7,7 @@ export class HealthPack {
   position: Vector2;
   radius: number = 10;
   active: boolean = true;
-  healAmount: number = 10;
+  healAmount: number = 15;
   hasPlayedSound: boolean = false;
   bobOffset: number = 0;
   pulseTimer: number = 0;

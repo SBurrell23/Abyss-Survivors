@@ -328,7 +328,8 @@ export class UpgradeManager {
               this.game.projectiles = this.game.projectiles.filter((proj: Projectile) => !(proj instanceof OrbitProjectile));
               for(let i=0; i<count; i++) {
                   const angle = (Math.PI * 2 / count) * i;
-                  this.game.projectiles.push(new OrbitProjectile(this.game, angle));
+                  const orbitProj = new OrbitProjectile(this.game, angle);
+                  this.game.projectiles.push(orbitProj);
               }
               break;
           case 'increment_pierce':
@@ -363,10 +364,10 @@ export class UpgradeManager {
               p.rearGunsLevel++;
               break;
           case 'increment_knockback':
-              p.knockbackStrength += 100; // Pixels per second impulse
+              p.knockbackStrength += 500; // Pixels per second impulse (+500 per rank)
               break;
           case 'unlock_freeze':
-              p.freezeChance += 0.1; // +10% chance
+              p.freezeChance += 0.2; // +20% chance per rank
               break;
           case 'unlock_giant':
               p.giantTorpedoLevel++;

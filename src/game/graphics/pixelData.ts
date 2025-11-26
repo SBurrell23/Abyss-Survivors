@@ -213,6 +213,20 @@ export const spriteDefinitions: Record<string, SpriteDef> = {
             "........"
         ]
     },
+    sea_mine: {
+        size: [8, 8],
+        palette: { '.': 'transparent', 'G': '#808080', 'D': '#505050', 'L': '#B0B0B0', 'S': '#606060' },
+        data: [
+            "S.GGGG.S",
+            ".GDDDDG.",
+            "GDDLLDDG",
+            "GDDLLDDG",
+            "GDDLLDDG",
+            "GDDLLDDG",
+            ".GDDDDG.",
+            "S.GGGG.S"
+        ]
+    },
     treasure_chest: {
         size: [16, 14],
         palette: { '.': 'transparent', 'G': '#DEBC1B', 'B': '#8B4513', 'L': '#000000', 'R': '#2B2B2B' },

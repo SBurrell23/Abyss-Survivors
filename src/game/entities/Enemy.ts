@@ -58,13 +58,11 @@ export class Enemy {
         this.damageFlashTimer -= dt;
     }
     
-    // Handle Freeze
+    // Handle Freeze/Chill
     let currentSpeed = this.stats.speed;
     if (this.freezeTimer > 0) {
         this.freezeTimer -= dt;
-        currentSpeed *= 0.5; // 50% Slow
-        // Optional: Full stun?
-        // currentSpeed = 0; 
+        currentSpeed *= 0.35; // 65% speed reduction (35% of normal speed)
     }
     
     // Handle Knockback

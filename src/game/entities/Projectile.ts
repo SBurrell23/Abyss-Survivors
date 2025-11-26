@@ -79,8 +79,8 @@ export class Projectile {
   onHit(target: any) {
       const enemy = target as Enemy;
       
-      // Apply Knockback
-      if (this.knockbackForce > 0 && enemy.applyKnockback) {
+      // Apply Knockback (but not to Kraken - it's immune)
+      if (this.knockbackForce > 0 && enemy.applyKnockback && !(target as any).isKraken) {
           const pushDir = this.velocity.normalize();
           enemy.applyKnockback(pushDir.scale(this.knockbackForce));
       }

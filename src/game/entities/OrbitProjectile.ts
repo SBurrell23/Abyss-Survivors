@@ -73,12 +73,8 @@ export class OrbitProjectile extends Projectile {
     ctx.save();
     ctx.translate(this.position.x, this.position.y);
     
-    // Calculate orbit direction (tangent to the circle, perpendicular to radius)
-    // The torpedo should point in the direction it's moving around the circle
-    const orbitDirection = this.angle + Math.PI / 2; // Perpendicular to radius
-    ctx.rotate(orbitDirection);
-    
     // Check if currently hitting something (for visual feedback)
+    // (Mines are circular, no rotation needed)
     let isHitting = false;
     for(const t of this.tickTimers.values()) {
         if (t > this.tickInterval - 0.1) {
@@ -87,14 +83,14 @@ export class OrbitProjectile extends Projectile {
         }
     }
 
-    // Use torpedo sprite instead of plain circle
-    const sprite = SpriteFactory.getSprite('projectile_torpedo');
-    const scale = 3; // Increased from 2 to make them thicker and longer
+    // Use sea mine sprite for circling mines
+    const sprite = SpriteFactory.getSprite('sea_mine');
+    const scale = 1.5; // Half the previous size
     
     // Add glow effect when hitting
     if (isHitting) {
         ctx.shadowBlur = 10;
-        ctx.shadowColor = '#00ffaa';
+        ctx.shadowColor = '#808080'; // Gray glow when hitting
     }
     
     ctx.drawImage(sprite, -sprite.width * scale / 2, -sprite.height * scale / 2, sprite.width * scale, sprite.height * scale);
