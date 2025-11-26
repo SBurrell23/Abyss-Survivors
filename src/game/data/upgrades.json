@@ -248,14 +248,14 @@
   {
     "id": "xp_multiplier",
     "name": "XP Multiplier",
-    "description": "Increases XP gained by 5%",
+    "description": "Increases XP gained by 10%",
     "rarity": "common",
     "icon": "⭐",
     "type": "stat",
     "stat": "xpMultiplier",
-    "value": 1.05,
+    "value": 1.1,
     "op": "multiply",
-    "maxRank": 5
+    "maxRank": 3
   },
   {
     "id": "projectile_size",
