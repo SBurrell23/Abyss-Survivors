@@ -47,6 +47,9 @@ export class Game {
   upgradeManager: UpgradeManager;
   soundManager: SoundManager;
   
+  // Track upgrades that have been seen in level up menu
+  seenUpgrades: Set<string> = new Set();
+  
   // Boss Fight Arena
   arenaBounds: { minX: number; maxX: number; minY: number; maxY: number } | null = null;
   
@@ -132,6 +135,9 @@ export class Game {
     
     // Setup Esc Menu
     this.setupEscMenu();
+    
+    // Setup Upgrade Menu Button
+    this.setupUpgradeMenuButton();
     
     // Override Player spawn methods to hook into Game
     this.player.spawnDepthCharge = () => {
@@ -225,6 +231,42 @@ export class Game {
       
       closeBtn.onclick = () => {
           this.closeEscMenu();
+      };
+  }
+  
+  setupUpgradeMenuButton() {
+      const upgradeMenuBtn = document.getElementById('upgrade-menu-btn');
+      if (!upgradeMenuBtn) return;
+      
+      upgradeMenuBtn.onclick = () => {
+          // Don't allow opening menu during game over, minigame, or upgrade selection
+          if (this.isGameOver || this.isMinigameActive) return;
+          
+          const settingsMenu = document.getElementById('settings-menu');
+          const upgradeMenu = document.getElementById('upgrade-menu');
+          const escMenu = document.getElementById('esc-menu');
+          
+          // Check if other menus are open
+          const settingsOpen = settingsMenu && settingsMenu.style.display === 'flex';
+          const upgradeOpen = upgradeMenu && upgradeMenu.style.display === 'flex';
+          
+          // Close settings menu if open
+          if (settingsOpen) {
+              this.closeSettingsMenu();
+          }
+          
+          // Don't open if upgrade menu is open (player must select an upgrade)
+          if (upgradeOpen) {
+              return;
+          }
+          
+          // Toggle Esc menu
+          const isOpen = escMenu && escMenu.style.display === 'flex';
+          if (isOpen) {
+              this.closeEscMenu();
+          } else {
+              this.openEscMenu();
+          }
       };
   }
   
@@ -357,23 +399,30 @@ export class Game {
           upgrades.forEach(upgrade => {
               const playerUpgrade = playerUpgrades.get(upgrade.id);
               const hasUpgrade = playerUpgrade !== undefined;
+              const hasSeen = this.seenUpgrades.has(upgrade.id);
               const count = playerUpgrade ? playerUpgrade.count : 0;
               const isMaxed = upgrade.maxRank && count >= upgrade.maxRank;
               
               const card = document.createElement('div');
+              // Only lock if not acquired (seen upgrades that aren't acquired still show description)
               card.className = `esc-upgrade-card rarity-${upgrade.rarity}${!hasUpgrade ? ' locked' : ''}`;
               
               let rankText = '';
               if (hasUpgrade) {
                   rankText = isMaxed ? `Rank ${count} (MAX)` : `Rank ${count}${upgrade.maxRank ? ` / ${upgrade.maxRank}` : ''}`;
-              } else {
+              } else if (hasSeen) {
                   rankText = 'Not Acquired';
+              } else {
+                  rankText = 'Not Found';
               }
+              
+              // Show description if acquired or seen, otherwise show "???"
+              const description = (hasUpgrade || hasSeen) ? upgrade.description : '???';
               
               card.innerHTML = `
                   <div class="esc-upgrade-icon">${upgrade.icon}</div>
                   <h4>${upgrade.name}</h4>
-                  <p>${upgrade.description}</p>
+                  <p>${description}</p>
                   <div class="esc-upgrade-rank ${isMaxed ? 'maxed' : ''}">${rankText}</div>
               `;
               
@@ -1430,6 +1479,9 @@ export class Game {
       const pick = availableUpgrades[Math.floor(Math.random() * availableUpgrades.length)];
       
       if (pick) {
+          // Mark this upgrade as seen
+          this.seenUpgrades.add(pick.id);
+          
           // Update rarity to match the actual upgrade given (in case we fell back to a different rarity)
           const actualRarity = pick.rarity;
           
@@ -1902,6 +1954,11 @@ export class Game {
           this.updateUI();
           return;
       }
+
+      // Mark all shown upgrades as seen
+      options.forEach(opt => {
+          this.seenUpgrades.add(opt.id);
+      });
 
       this.isPaused = true;
       menu.style.display = 'flex';
