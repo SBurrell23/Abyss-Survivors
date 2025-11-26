@@ -109,8 +109,8 @@ export class Game {
         if (this.isMinigameActive && e.code === 'Space') {
             this.stopMinigame();
         }
-        // Toggle Debug Menu
-        if (e.key === '`') {
+        // Toggle Debug Menu (Ctrl + `)
+        if (e.key === '`' && e.ctrlKey) {
             this.toggleDebugMenu();
         }
         // Toggle Esc Menu
