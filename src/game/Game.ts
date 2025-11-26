@@ -1552,44 +1552,39 @@ export class Game {
   
   spawnBossObstacles(centerX: number, centerY: number, arenaSize: number) {
       // Spawn floating coral obstacles around the arena
-      const coralCount = 20; // More abundant
-      const coralMinDist = 200; // Minimum distance from center
-      const coralMaxDist = arenaSize / 2 - 100; // Maximum distance from center
-      const minCoralSpacing = 180; // Minimum distance between corals (increased for more spread)
+      // One coral per grid cell
+      const CORAL_GRID_SIZE = 450; // Size of each grid cell in pixels (easily editable)
       const coralColors = 6; // Number of coral colors available
       
-      const spawnedCorals: Array<{x: number, y: number, radius: number}> = [];
+      // Calculate arena bounds
+      const arenaMinX = centerX - arenaSize / 2;
+      const arenaMinY = centerY - arenaSize / 2;
       
-      // Distribute colors evenly using round-robin
-      let colorIndex = 0;
+      // Calculate number of grid cells in each dimension
+      const gridCellsX = Math.floor(arenaSize / CORAL_GRID_SIZE);
+      const gridCellsY = Math.floor(arenaSize / CORAL_GRID_SIZE);
       
-      for (let i = 0; i < coralCount; i++) {
-          let attempts = 0;
-          let validPosition = false;
-          let x = 0, y = 0, radius = 0;
-          
-          // Try to find a valid position that's not too close to other corals
-          while (!validPosition && attempts < 50) {
-              const angle = Math.random() * Math.PI * 2;
-              const dist = coralMinDist + Math.random() * (coralMaxDist - coralMinDist);
-              x = centerX + Math.cos(angle) * dist;
-              y = centerY + Math.sin(angle) * dist;
-              radius = 30 + Math.random() * 20; // 30-50 pixels (smaller)
+      // Spawn one coral per grid cell
+      for (let gridX = 0; gridX < gridCellsX; gridX++) {
+          for (let gridY = 0; gridY < gridCellsY; gridY++) {
+              // Calculate the bounds of this grid cell
+              const cellMinX = arenaMinX + gridX * CORAL_GRID_SIZE;
+              const cellMinY = arenaMinY + gridY * CORAL_GRID_SIZE;
               
-              // Check if this position is far enough from existing corals
-              validPosition = spawnedCorals.every(coral => {
-                  const distToCoral = Math.sqrt((x - coral.x) ** 2 + (y - coral.y) ** 2);
-                  return distToCoral >= minCoralSpacing + coral.radius + radius;
-              });
+              // Spawn coral at random position within this grid cell
+              // Leave some margin to avoid spawning at exact edges
+              const margin = 20;
+              const x = cellMinX + margin + Math.random() * (CORAL_GRID_SIZE - margin * 2);
+              const y = cellMinY + margin + Math.random() * (CORAL_GRID_SIZE - margin * 2);
+              const radius = 30 + Math.random() * 20; // 30-50 pixels
               
-              attempts++;
-          }
-          
-          if (validPosition) {
-              // Assign color in round-robin fashion for even distribution
+              // Assign color using checkerboard-like pattern with variation for better alternation
+              // Use grid position to create alternating pattern, but add some randomness
+              const baseColor = (gridX + gridY) % coralColors;
+              const colorVariation = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
+              const colorIndex = (baseColor + colorVariation + coralColors) % coralColors;
+              
               this.obstacles.push(new Obstacle(this, x, y, radius, 'coral', colorIndex));
-              spawnedCorals.push({x, y, radius});
-              colorIndex = (colorIndex + 1) % coralColors; // Cycle through colors
           }
       }
   }
