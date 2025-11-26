@@ -3,7 +3,7 @@
     "id": "fish_small",
     "name": "Guppy",
     "hp": 5,
-    "speed": 110,
+    "speed": 100,
     "radius": 8,
     "color": "#ff6b6b",
     "xp": 5,

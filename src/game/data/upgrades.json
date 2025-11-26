@@ -260,14 +260,14 @@
   {
     "id": "projectile_size",
     "name": "Thick Torpedoes",
-    "description": "Increases torpedo size by 10%",
+    "description": "Increases torpedo size by 15%",
     "rarity": "common",
     "icon": "📏",
     "type": "stat",
     "stat": "projectileSizeMult",
-    "value": 1.1,
+    "value": 1.15, 
     "op": "multiply",
-    "maxRank": 7
+    "maxRank": 6
   },
   {
     "id": "sonar_pulse",

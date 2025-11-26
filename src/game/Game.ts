@@ -201,12 +201,14 @@ export class Game {
       const depthSlider = document.getElementById('debug-depth-slider') as HTMLInputElement;
       const depthVal = document.getElementById('debug-depth-val');
       const powerupsContainer = document.getElementById('debug-powerups');
-      const xpButton = document.getElementById('debug-add-xp');
+      const maxAllButton = document.getElementById('debug-max-all-powerups');
+      const maxLegendaryButton = document.getElementById('debug-max-all-legendary');
+      const maxRareButton = document.getElementById('debug-max-all-rare');
       const invulnCheckbox = document.getElementById('debug-invulnerable') as HTMLInputElement;
       const speedCheckbox = document.getElementById('debug-speed') as HTMLInputElement;
       const noLevelUpCheckbox = document.getElementById('debug-no-level-up') as HTMLInputElement;
       
-      if (!menu || !depthSlider || !powerupsContainer || !xpButton || !invulnCheckbox || !speedCheckbox || !noLevelUpCheckbox) return;
+      if (!menu || !depthSlider || !powerupsContainer || !maxAllButton || !maxLegendaryButton || !maxRareButton || !invulnCheckbox || !speedCheckbox || !noLevelUpCheckbox) return;
       
       // Depth Slider Logic
       depthSlider.oninput = (e: any) => {
@@ -222,9 +224,54 @@ export class Game {
           }
       };
       
-      // Add XP Button
-      xpButton.onclick = () => {
-          this.collectXP(100);
+      // Max All Power-Ups Button
+      maxAllButton.onclick = () => {
+          this.upgradeManager.upgrades.forEach(upgrade => {
+              if (upgrade.maxRank) {
+                  const currentUpgrade = this.upgradeManager.playerUpgrades.get(upgrade.id);
+                  const currentCount = currentUpgrade ? currentUpgrade.count : 0;
+                  const upgradesNeeded = upgrade.maxRank - currentCount;
+                  
+                  // Apply the upgrade until it reaches max rank
+                  for (let i = 0; i < upgradesNeeded; i++) {
+                      this.upgradeManager.applyUpgrade(upgrade);
+                  }
+              }
+          });
+          this.updateUI();
+      };
+      
+      // Max All Legendary Power-Ups Button
+      maxLegendaryButton.onclick = () => {
+          this.upgradeManager.upgrades.forEach(upgrade => {
+              if (upgrade.rarity === 'legendary' && upgrade.maxRank) {
+                  const currentUpgrade = this.upgradeManager.playerUpgrades.get(upgrade.id);
+                  const currentCount = currentUpgrade ? currentUpgrade.count : 0;
+                  const upgradesNeeded = upgrade.maxRank - currentCount;
+                  
+                  // Apply the upgrade until it reaches max rank
+                  for (let i = 0; i < upgradesNeeded; i++) {
+                      this.upgradeManager.applyUpgrade(upgrade);
+                  }
+              }
+          });
+          this.updateUI();
+      };
+      
+      // Max All Rare Power-Ups Button
+      maxRareButton.onclick = () => {
+          this.upgradeManager.upgrades.forEach(upgrade => {
+              if (upgrade.rarity === 'rare' && upgrade.maxRank) {
+                  const currentUpgrade = this.upgradeManager.playerUpgrades.get(upgrade.id);
+                  const currentCount = currentUpgrade ? currentUpgrade.count : 0;
+                  const upgradesNeeded = upgrade.maxRank - currentCount;
+                  
+                  // Apply the upgrade until it reaches max rank
+                  for (let i = 0; i < upgradesNeeded; i++) {
+                      this.upgradeManager.applyUpgrade(upgrade);
+                  }
+              }
+          });
           this.updateUI();
       };
       
@@ -1024,7 +1071,77 @@ export class Game {
       if (rewardEl) rewardEl.style.display = 'none';
       this.minigameCursor = 0;
       this.minigameLastCursor = 0;
+      
+      // Check which upgrades are maxed and adjust zones accordingly
+      this.updateMinigameZones();
+      
       this.soundManager.playMinigameStart();
+  }
+  
+  updateMinigameZones() {
+      const gaugeEl = document.getElementById('minigame-gauge');
+      if (!gaugeEl) return;
+      
+      // Check if all legendary upgrades are maxed
+      const allLegendaryMaxed = this.upgradeManager.upgrades
+          .filter(u => u.rarity === 'legendary')
+          .every(u => {
+              const playerUpgrade = this.upgradeManager.playerUpgrades.get(u.id);
+              return !u.maxRank || (playerUpgrade && playerUpgrade.count >= u.maxRank);
+          });
+      
+      // Check if all rare upgrades are maxed
+      const allRareMaxed = this.upgradeManager.upgrades
+          .filter(u => u.rarity === 'rare')
+          .every(u => {
+              const playerUpgrade = this.upgradeManager.playerUpgrades.get(u.id);
+              return !u.maxRank || (playerUpgrade && playerUpgrade.count >= u.maxRank);
+          });
+      
+      // Get zone elements
+      const legendaryZone = gaugeEl.querySelector('.zone-legendary') as HTMLElement;
+      const rareLeftZone = gaugeEl.querySelector('.zone-rare-left') as HTMLElement;
+      const rareRightZone = gaugeEl.querySelector('.zone-rare-right') as HTMLElement;
+      
+      if (allLegendaryMaxed && legendaryZone) {
+          // Hide legendary zone and expand rare zones to fill the center
+          legendaryZone.style.display = 'none';
+          
+          if (!allRareMaxed && rareLeftZone && rareRightZone) {
+              // Expand rare zones to fill the legendary space without overlap
+              // Original: left 44.75%-48.25% (3.5%), legendary 48.25%-51.75% (3.5%), right 51.75%-55.25% (3.5%)
+              // New: left 44.75%-50% (5.25%), right 50%-55.25% (5.25%)
+              rareLeftZone.style.width = '5.25%';
+              rareLeftZone.style.left = '44.75%';
+              rareRightZone.style.width = '5.25%';
+              rareRightZone.style.left = '50%';
+          }
+      } else if (legendaryZone) {
+          // Reset legendary zone to normal
+          legendaryZone.style.display = 'block';
+      }
+      
+      if (allRareMaxed) {
+          // Hide rare zones entirely
+          if (rareLeftZone) rareLeftZone.style.display = 'none';
+          if (rareRightZone) rareRightZone.style.display = 'none';
+      } else {
+          // Show rare zones and reset to normal size if legendary is not maxed
+          if (rareLeftZone) {
+              rareLeftZone.style.display = 'block';
+              if (!allLegendaryMaxed) {
+                  rareLeftZone.style.width = '3.5%';
+                  rareLeftZone.style.left = '44.75%';
+              }
+          }
+          if (rareRightZone) {
+              rareRightZone.style.display = 'block';
+              if (!allLegendaryMaxed) {
+                  rareRightZone.style.width = '3.5%';
+                  rareRightZone.style.left = '51.75%';
+              }
+          }
+      }
   }
   
   stopMinigame() {
@@ -1033,13 +1150,34 @@ export class Game {
       
       // Calculate Reward
       let rarity: 'common' | 'rare' | 'legendary' = 'common';
-      // Zones: Rare 42.5-57.5? No, CSS says: Rare width 15% at 42.5%, Legendary width 5% at 47.5%
-      // Rare: 0.4475 to 0.4825 (left) and 0.5175 to 0.5525 (right) - same size as legendary on both sides
-      // Legendary: 0.4825 to 0.5175 (center)
       
-      if (this.minigameCursor >= 0.4475 && this.minigameCursor <= 0.4825) rarity = 'rare'; // Left rare zone
-      if (this.minigameCursor >= 0.5175 && this.minigameCursor <= 0.5525) rarity = 'rare'; // Right rare zone
-      if (this.minigameCursor >= 0.4825 && this.minigameCursor <= 0.5175) rarity = 'legendary'; // Legendary takes priority
+      // Check which zones are available
+      const allLegendaryMaxed = this.upgradeManager.upgrades
+          .filter(u => u.rarity === 'legendary')
+          .every(u => {
+              const playerUpgrade = this.upgradeManager.playerUpgrades.get(u.id);
+              return !u.maxRank || (playerUpgrade && playerUpgrade.count >= u.maxRank);
+          });
+      
+      const allRareMaxed = this.upgradeManager.upgrades
+          .filter(u => u.rarity === 'rare')
+          .every(u => {
+              const playerUpgrade = this.upgradeManager.playerUpgrades.get(u.id);
+              return !u.maxRank || (playerUpgrade && playerUpgrade.count >= u.maxRank);
+          });
+      
+      // Determine zones based on what's available
+      if (!allLegendaryMaxed) {
+          // Normal zones: Rare at 0.4475-0.4825 (left) and 0.5175-0.5525 (right), Legendary at 0.4825-0.5175 (center)
+          if (this.minigameCursor >= 0.4475 && this.minigameCursor <= 0.4825) rarity = 'rare'; // Left rare zone
+          if (this.minigameCursor >= 0.5175 && this.minigameCursor <= 0.5525) rarity = 'rare'; // Right rare zone
+          if (this.minigameCursor >= 0.4825 && this.minigameCursor <= 0.5175) rarity = 'legendary'; // Legendary takes priority
+      } else if (!allRareMaxed) {
+          // Legendary maxed, rare zones expanded: Left rare 0.4475-0.50, Right rare 0.50-0.5525
+          if (this.minigameCursor >= 0.4475 && this.minigameCursor < 0.50) rarity = 'rare'; // Left expanded rare zone
+          if (this.minigameCursor >= 0.50 && this.minigameCursor <= 0.5525) rarity = 'rare'; // Right expanded rare zone
+      }
+      // If both are maxed, rarity stays 'common'
       
       // Play chest open sound with correct rarity
       this.soundManager.playChestOpen(rarity);
@@ -1054,18 +1192,45 @@ export class Game {
         return true;
       });
       
-      // If no upgrades available for this rarity, try any rarity
-      const availableUpgrades = upgrades.length > 0 ? upgrades : this.upgradeManager.upgrades.filter(u => {
-        const playerUpgrade = this.upgradeManager.playerUpgrades.get(u.id);
-        if (playerUpgrade && u.maxRank) {
-          return playerUpgrade.count < u.maxRank;
+      let availableUpgrades = upgrades;
+      
+      // Safety check: if rare/legendary and all upgrades of that rarity are maxed,
+      // give a random upgrade the player doesn't have instead
+      if ((rarity === 'rare' || rarity === 'legendary') && upgrades.length === 0) {
+        const upgradesNotOwned = this.upgradeManager.upgrades.filter(u => {
+          // Only return upgrades the player doesn't have at all
+          return !this.upgradeManager.playerUpgrades.has(u.id);
+        });
+        
+        if (upgradesNotOwned.length > 0) {
+          availableUpgrades = upgradesNotOwned;
+        } else {
+          // Fallback: any upgrade that hasn't reached max rank
+          availableUpgrades = this.upgradeManager.upgrades.filter(u => {
+            const playerUpgrade = this.upgradeManager.playerUpgrades.get(u.id);
+            if (playerUpgrade && u.maxRank) {
+              return playerUpgrade.count < u.maxRank;
+            }
+            return true;
+          });
         }
-        return true;
-      });
+      } else if (upgrades.length === 0) {
+        // If no upgrades available for this rarity (common), try any rarity
+        availableUpgrades = this.upgradeManager.upgrades.filter(u => {
+          const playerUpgrade = this.upgradeManager.playerUpgrades.get(u.id);
+          if (playerUpgrade && u.maxRank) {
+            return playerUpgrade.count < u.maxRank;
+          }
+          return true;
+        });
+      }
       
       const pick = availableUpgrades[Math.floor(Math.random() * availableUpgrades.length)];
       
       if (pick) {
+          // Update rarity to match the actual upgrade given (in case we fell back to a different rarity)
+          const actualRarity = pick.rarity;
+          
           this.upgradeManager.applyUpgrade(pick);
           this.soundManager.playPowerup();
           
@@ -1076,7 +1241,7 @@ export class Game {
               rewardEl.style.display = 'block';
               contentEl.innerHTML = `
                   <div class="upgrade-icon" style="font-size: 48px;">${pick.icon}</div>
-                  <h3 style="margin:0; color: ${rarity === 'legendary' ? '#ff9800' : rarity === 'rare' ? '#9c27b0' : '#4caf50'}">${pick.name}</h3>
+                  <h3 style="margin:0; color: ${actualRarity === 'legendary' ? '#ff9800' : actualRarity === 'rare' ? '#9c27b0' : '#4caf50'}">${pick.name}</h3>
                   <p style="margin:0; color:#ccc;">${pick.description}</p>
               `;
           }
@@ -1477,15 +1642,22 @@ export class Game {
   }
 
   showUpgradeMenu() {
-      this.isPaused = true;
       const menu = document.getElementById('upgrade-menu');
       const optionsContainer = document.getElementById('upgrade-options');
       if (!menu || !optionsContainer) return;
 
+      const options = this.upgradeManager.getRandomUpgrades(5, this.depth);
+
+      // Safety check: if no upgrades are available, skip the level up screen
+      if (options.length === 0) {
+          // No upgrades available, just continue the game
+          this.updateUI();
+          return;
+      }
+
+      this.isPaused = true;
       menu.style.display = 'flex';
       optionsContainer.innerHTML = '';
-
-      const options = this.upgradeManager.getRandomUpgrades(5, this.depth);
 
       options.forEach(opt => {
           const el = document.createElement('div');
@@ -1590,11 +1762,13 @@ export class Game {
           const inventory = this.upgradeManager.getInventory();
           inventory.forEach(item => {
               const el = document.createElement('div');
-              el.className = 'inv-item';
-              el.title = `${item.def.name} (Rank ${item.count})`;
+              const isMaxed = item.def.maxRank && item.count >= item.def.maxRank;
+              el.className = isMaxed ? 'inv-item maxed' : 'inv-item';
+              el.title = `${item.def.name} (Rank ${item.count}${isMaxed ? ' - MAX' : ''})`;
               el.innerHTML = `
                 <div class="inv-icon">${item.def.icon}</div>
                 <div class="inv-rank">${item.count}</div>
+                ${isMaxed ? '<div class="inv-max-tag">MAX</div>' : ''}
               `;
               inventoryEl.appendChild(el);
           });
