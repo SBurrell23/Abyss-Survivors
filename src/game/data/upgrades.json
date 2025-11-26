@@ -97,7 +97,7 @@
     "icon": "💥",
     "type": "special",
     "effect": "increment_explosion",
-    "maxRank": 7
+    "maxRank": 6
   },
   {
     "id": "homing_tech",
@@ -112,7 +112,7 @@
   {
     "id": "sniper_module",
     "name": "Sniper Module",
-    "description": "Increases range and speed by 30%",
+    "description": "Increases range and speed by 25%",
     "rarity": "common",
     "icon": "🎯",
     "type": "special",
@@ -144,7 +144,7 @@
   {
     "id": "plasma_field",
     "name": "Plasma Field",
-    "description": "Damaging aura around submarine",
+    "description": "Creates a persistent damaging aura around around your sub",
     "rarity": "rare",
     "icon": "⚛️",
     "type": "special",
@@ -164,14 +164,14 @@
   {
     "id": "titanium_plating",
     "name": "Titanium Plating",
-    "description": "Reduces incoming damage by 20%",
+    "description": "Reduces incoming damage by 25%",
     "rarity": "common",
     "icon": "⛓️",
     "type": "stat",
     "stat": "damageReduction",
-    "value": 0.2,
+    "value": 0.25,
     "op": "add",
-    "maxRank": 5
+    "maxRank": 4
   },
   {
     "id": "scavenger_protocol",
@@ -248,7 +248,7 @@
   {
     "id": "xp_multiplier",
     "name": "XP Multiplier",
-    "description": "Increases XP gained by 10%",
+    "description": "Increases XP gained by an additional 10%",
     "rarity": "common",
     "icon": "⭐",
     "type": "stat",

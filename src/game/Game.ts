@@ -74,7 +74,7 @@ export class Game {
   upgradeLevel: number = 1; 
   xp: number = 0;
   xpToNextLevel: number = 100;
-  isPaused: boolean = false;
+  isPaused: boolean = true; // Start paused until start button is clicked
   isGameOver: boolean = false;
   
   // Stats tracking
@@ -138,6 +138,9 @@ export class Game {
     
     // Setup Upgrade Menu Button
     this.setupUpgradeMenuButton();
+    
+    // Setup Start Screen
+    this.setupStartScreen();
     
     // Override Player spawn methods to hook into Game
     this.player.spawnDepthCharge = () => {
@@ -816,6 +819,19 @@ export class Game {
           };
       }
   }
+  
+  setupStartScreen() {
+      const startScreen = document.getElementById('start-screen');
+      const startBtn = document.getElementById('start-btn');
+      
+      if (!startScreen || !startBtn) return;
+      
+      startBtn.onclick = () => {
+          startScreen.style.display = 'none';
+          this.start();
+          this.soundManager.playUIClick();
+      };
+  }
 
   resize() {
     this.canvas.width = window.innerWidth;
@@ -841,6 +857,20 @@ export class Game {
   start() {
     this.lastTime = performance.now();
     this.gameStartTime = performance.now();
+    
+    // Initialize camera to center on player
+    this.camera.x = this.player.position.x - this.canvas.width / 2;
+    this.camera.y = this.player.position.y - this.canvas.height / 2;
+    
+    // Ensure camera doesn't show too much sky (clamp top)
+    const minCamY = -0.15 * this.canvas.height;
+    if (this.camera.y < minCamY) {
+        this.camera.y = minCamY;
+    }
+    
+    // Unpause the game
+    this.isPaused = false;
+    
     // Play water splash sound when game starts
     this.soundManager.playWaterSplash();
     // Start ambient background music loop (volume will be set based on settings)

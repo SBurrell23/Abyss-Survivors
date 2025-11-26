@@ -335,14 +335,14 @@ export class UpgradeManager {
               p.pierceCount++;
               break;
           case 'increment_explosion':
-              p.explosionRadius += 30;
+              p.explosionRadius += 35; // Increased from 30 to 35 so rank 6 = 210 (same as old rank 7)
               break;
           case 'increment_homing':
               p.homingStrength += 0.5;
               break;
           case 'sniper_module':
-              p.projectileSpeedMult += 0.3;
-              p.projectileRangeMult += 0.3;
+              p.projectileSpeedMult += 0.25;
+              p.projectileRangeMult += 0.25;
               break;
           case 'unlock_depth_charge':
               p.depthChargeLevel++;
