@@ -52,6 +52,7 @@ export class Player {
   plasmaPulseTimer: number = 0; // For visual pulse when dealing damage
   sonarPulseTimer: number = 0; // Timer for sonar pulse
   damageFlashTimer: number = 0; // Flash HP bar when taking damage
+  propellerRotation: number = 0; // Propeller rotation angle
 
   vampireCounter: number = 0; // Track kills for vampire
   
@@ -117,6 +118,12 @@ export class Player {
      // Update damage flash timer for HP bar
      if (this.damageFlashTimer > 0) {
          this.damageFlashTimer -= dt;
+     }
+     
+     // Update propeller rotation (spin continuously)
+     this.propellerRotation += dt * 8; // Rotate 8 radians per second (moderate spin)
+     if (this.propellerRotation > Math.PI * 2) {
+         this.propellerRotation -= Math.PI * 2;
      }
    }
   
@@ -367,16 +374,163 @@ export class Player {
     // Rotate context to face mouse
     ctx.rotate(angle);
 
-    const sprite = SpriteFactory.getSprite('player');
     // Draw centered, scaled up by 2
     const scale = 2;
     
     // Fix upside down rendering when facing left
-    if (Math.abs(angle) > Math.PI / 2) {
+    const isFlipped = Math.abs(angle) > Math.PI / 2;
+    if (isFlipped) {
         ctx.scale(1, -1);
     }
 
-    ctx.drawImage(sprite, -sprite.width * scale / 2, -sprite.height * scale / 2, sprite.width * scale, sprite.height * scale);
+    // Draw player submarine as vector graphics (matching propeller style)
+    // Based on 20x12 pixel sprite, scaled by 2
+    const spriteWidth = 20 * scale;
+    const spriteHeight = 12 * scale;
+    
+    // Main body (yellow submarine hull)
+    ctx.fillStyle = '#FFD700';
+    ctx.strokeStyle = '#B8860B';
+    ctx.lineWidth = 1;
+    
+    // Main hull body (rectangular with beveled edges and rounded front)
+    const hullX = -spriteWidth / 2 + 2 * scale; // Start after propeller area
+    const hullY = -spriteHeight / 2 + 3 * scale;
+    const hullWidth = 14 * scale;
+    const hullHeight = 5 * scale;
+    const cornerRadius = 1 * scale; // Beveled corner radius
+    const frontRadius = 2.5 * scale; // Rounded front (right side)
+    
+    // Draw hull with beveled corners and rounded front
+    ctx.beginPath();
+    // Start from left side (back), top
+    ctx.moveTo(hullX + cornerRadius, hullY);
+    // Top edge with rounded front
+    ctx.lineTo(hullX + hullWidth - frontRadius, hullY);
+    // Rounded front (right side)
+    ctx.arc(hullX + hullWidth - frontRadius, hullY + hullHeight / 2, frontRadius, -Math.PI / 2, Math.PI / 2, false);
+    // Bottom edge
+    ctx.lineTo(hullX + cornerRadius, hullY + hullHeight);
+    // Bottom-left corner
+    ctx.arc(hullX + cornerRadius, hullY + hullHeight - cornerRadius, cornerRadius, Math.PI / 2, Math.PI, false);
+    // Left edge
+    ctx.lineTo(hullX, hullY + cornerRadius);
+    // Top-left corner
+    ctx.arc(hullX + cornerRadius, hullY + cornerRadius, cornerRadius, Math.PI, -Math.PI / 2, false);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // Dark yellow border/shadow details
+    ctx.fillStyle = '#B8860B';
+    ctx.fillRect(hullX + 6 * scale, hullY + 1 * scale, 3 * scale, 1);
+    ctx.fillRect(hullX + 6 * scale, hullY + 4 * scale, 3 * scale, 1);
+    
+    // Orange decoration
+    ctx.fillStyle = '#FFA500';
+    ctx.fillRect(hullX + 7 * scale, hullY + 2 * scale, 1 * scale, 1 * scale);
+    
+    // Conning tower (light yellow with blue window) - rounded/beveled
+    const towerX = -spriteWidth / 2 + 6 * scale; // Adjusted to center larger tower
+    const towerY = -spriteHeight / 2 + 0.5 * scale; // Higher position
+    const towerWidth = 4.2 * scale; // Increased from 3.5
+    const towerHeight = 3 * scale; // Increased from 2.4
+    const towerCornerRadius = 1.1 * scale; // Larger corner radius
+    
+    // Tower base with rounded corners
+    ctx.fillStyle = '#FFED4E';
+    ctx.strokeStyle = '#B8860B';
+    ctx.beginPath();
+    ctx.moveTo(towerX + towerCornerRadius, towerY);
+    ctx.lineTo(towerX + towerWidth - towerCornerRadius, towerY);
+    ctx.arc(towerX + towerWidth - towerCornerRadius, towerY + towerCornerRadius, towerCornerRadius, -Math.PI / 2, 0, false);
+    ctx.lineTo(towerX + towerWidth, towerY + towerHeight - towerCornerRadius);
+    ctx.arc(towerX + towerWidth - towerCornerRadius, towerY + towerHeight - towerCornerRadius, towerCornerRadius, 0, Math.PI / 2, false);
+    ctx.lineTo(towerX + towerCornerRadius, towerY + towerHeight);
+    ctx.arc(towerX + towerCornerRadius, towerY + towerHeight - towerCornerRadius, towerCornerRadius, Math.PI / 2, Math.PI, false);
+    ctx.lineTo(towerX, towerY + towerCornerRadius);
+    ctx.arc(towerX + towerCornerRadius, towerY + towerCornerRadius, towerCornerRadius, Math.PI, -Math.PI / 2, false);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // Blue window (beveled port hole - perfectly circular and rounded)
+    const windowX = towerX + towerWidth / 2;
+    const windowY = towerY + towerHeight / 2;
+    const windowRadius = 1.1 * scale; // Perfect circle - same radius for both axes
+    const borderThickness = 0.25 * scale; // Border thickness
+    
+    // Outer bevel (darker border) - perfectly circular
+    ctx.fillStyle = '#B8860B';
+    ctx.beginPath();
+    ctx.arc(windowX, windowY, windowRadius + borderThickness, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Inner window (blue) - perfectly circular
+    ctx.fillStyle = '#87CEEB';
+    ctx.beginPath();
+    ctx.arc(windowX, windowY, windowRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Inner highlight (lighter blue for bevel effect) - perfectly circular
+    ctx.fillStyle = '#B0E0E6';
+    ctx.beginPath();
+    ctx.arc(windowX - 0.2 * scale, windowY - 0.2 * scale, windowRadius * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw spinning propeller separately
+    ctx.save();
+    // Propeller is on the left side of sprite, at x = -spriteWidth/2 + 1.5 pixels (center of propeller)
+    // In sprite coordinates: x = 1.5, y = 6 (middle of propeller area)
+    const propX = (-spriteWidth / 2 + 1.5 * scale);
+    const propY = (-spriteHeight / 2 + 6 * scale);
+    
+    ctx.translate(propX, propY);
+    ctx.rotate(this.propellerRotation);
+    
+    // Draw propeller blades (simple X shape) - eggshell with black outline
+    const bladeLength = 3 * scale * 0.75; // 25% smaller propeller (was 3, now 2.25)
+    
+    // Draw 4 blades in an X pattern with dark gray outline (slightly darker than propeller)
+    ctx.strokeStyle = '#3a3a3a'; // Dark gray, slightly darker than #555555
+    ctx.lineWidth = 2.5 * scale; // Thicker for outline
+    ctx.lineCap = 'round';
+    
+    ctx.beginPath();
+    // Top-right blade
+    ctx.moveTo(0, 0);
+    ctx.lineTo(bladeLength * 0.7, -bladeLength * 0.7);
+    // Bottom-right blade
+    ctx.moveTo(0, 0);
+    ctx.lineTo(bladeLength * 0.7, bladeLength * 0.7);
+    // Top-left blade
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-bladeLength * 0.7, -bladeLength * 0.7);
+    // Bottom-left blade
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-bladeLength * 0.7, bladeLength * 0.7);
+    ctx.stroke();
+    
+    // Draw blades again in darker gray color (thinner, on top)
+    ctx.strokeStyle = '#555555';
+    ctx.lineWidth = 1.2 * scale;
+    
+    ctx.beginPath();
+    // Top-right blade
+    ctx.moveTo(0, 0);
+    ctx.lineTo(bladeLength * 0.7, -bladeLength * 0.7);
+    // Bottom-right blade
+    ctx.moveTo(0, 0);
+    ctx.lineTo(bladeLength * 0.7, bladeLength * 0.7);
+    // Top-left blade
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-bladeLength * 0.7, -bladeLength * 0.7);
+    // Bottom-left blade
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-bladeLength * 0.7, bladeLength * 0.7);
+    ctx.stroke();
+    
+    ctx.restore();
 
     ctx.restore();
   }
