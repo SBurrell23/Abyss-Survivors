@@ -162,7 +162,6 @@ export class Game {
       if (!settingsBtn || !settingsMenu || !volumeSlider || !volumeValue || !ambientCheckbox || !closeBtn) return;
       
       const openMenu = () => {
-          if (this.isGameOver) return; // Don't open settings if game is over
           // Close Esc menu if it's open
           const escMenu = document.getElementById('esc-menu');
           if (escMenu && escMenu.style.display === 'flex') {
@@ -242,8 +241,8 @@ export class Game {
       if (!upgradeMenuBtn) return;
       
       upgradeMenuBtn.onclick = () => {
-          // Don't allow opening menu during game over, minigame, or upgrade selection
-          if (this.isGameOver || this.isMinigameActive) return;
+          // Don't allow opening menu during minigame or upgrade selection (but allow during game over/win screen)
+          if (this.isMinigameActive) return;
           
           const settingsMenu = document.getElementById('settings-menu');
           const upgradeMenu = document.getElementById('upgrade-menu');
@@ -280,8 +279,8 @@ export class Game {
       
       if (!escMenu) return;
       
-      // Don't allow opening menu during game over or minigame
-      if (this.isGameOver || this.isMinigameActive) return;
+      // Don't allow opening menu during minigame (but allow during game over/win screen)
+      if (this.isMinigameActive) return;
       
       // Check if other menus are open - close them first
       const settingsOpen = settingsMenu && settingsMenu.style.display === 'flex';
@@ -444,13 +443,14 @@ export class Game {
       const powerupsContainer = document.getElementById('debug-powerups');
       const maxAllButton = document.getElementById('debug-max-all-powerups');
       const levelUpButton = document.getElementById('debug-level-up');
+      const killKrakenButton = document.getElementById('debug-kill-kraken');
       const maxLegendaryButton = document.getElementById('debug-max-all-legendary');
       const maxRareButton = document.getElementById('debug-max-all-rare');
       const invulnCheckbox = document.getElementById('debug-invulnerable') as HTMLInputElement;
       const speedCheckbox = document.getElementById('debug-speed') as HTMLInputElement;
       const noLevelUpCheckbox = document.getElementById('debug-no-level-up') as HTMLInputElement;
       
-      if (!menu || !depthSlider || !powerupsContainer || !maxAllButton || !levelUpButton || !maxLegendaryButton || !maxRareButton || !invulnCheckbox || !speedCheckbox || !noLevelUpCheckbox) return;
+      if (!menu || !depthSlider || !powerupsContainer || !maxAllButton || !levelUpButton || !killKrakenButton || !maxLegendaryButton || !maxRareButton || !invulnCheckbox || !speedCheckbox || !noLevelUpCheckbox) return;
       
       // Depth Slider Logic
       depthSlider.oninput = (e: any) => {
@@ -486,6 +486,15 @@ export class Game {
       // Level Up Button
       levelUpButton.onclick = () => {
           this.levelUp();
+      };
+      
+      // Kill Kraken Button
+      killKrakenButton.onclick = () => {
+          if (this.kraken && this.kraken.active) {
+              // Deal massive damage to kill kraken instantly (bypass damage cap)
+              this.kraken.takeDamage(this.kraken.hp + 1000, true);
+              this.updateUI();
+          }
       };
       
       // Max All Legendary Power-Ups Button
@@ -1161,7 +1170,7 @@ export class Game {
       startBtn.onclick = () => {
           startScreen.style.display = 'none';
           this.start();
-          this.soundManager.playUIClick();
+          // Removed chime sound - splash sound is played in start() method
       };
   }
 
@@ -1703,62 +1712,45 @@ export class Game {
   }
 
   spawnInitialChests() {
-      const AREA_SIZE_PIXELS = 1750; // Changed from 2500 to 1750 pixels (70 meters)
-      const TOTAL_CHESTS = 100;
+      const AREA_SIZE_PIXELS = 3000; // 3000 pixels per cell (120 meters)
       
       // Player starting position (where chests should not spawn)
       const START_X = 0;
       const START_Y = 75;
       const EXCLUSION_RADIUS = 500; // Half of 1000x1000 area
       
-      // Create a grid to cover -25k to +25k pixels with 1750 pixel cells (50000 / 1750 ≈ 29 cells per side)
-      // Each cell is 1750x1750 pixels (70x70 meters)
-      const gridSize = Math.ceil(50000 / AREA_SIZE_PIXELS); // 29 cells per side to cover 50k pixels
-      const halfGrid = Math.floor(gridSize / 2); // halfGrid = 14, so grid goes from -14 to +14
+      // Create a grid to cover -25k to +25k pixels with 3000 pixel cells (50000 / 3000 ≈ 17 cells per side)
+      // Each cell is 3000x3000 pixels
+      const gridSize = Math.ceil(50000 / AREA_SIZE_PIXELS); // 17 cells per side to cover 50k pixels
+      const halfGrid = Math.floor(gridSize / 2); // halfGrid = 8, so grid goes from -8 to +8
       
-      const usedAreas = new Set<string>();
-      let chestsSpawned = 0;
-      let attempts = 0;
-      const maxAttempts = TOTAL_CHESTS * 10; // Allow more attempts to account for exclusions
-      
-      while (chestsSpawned < TOTAL_CHESTS && attempts < maxAttempts) {
-          attempts++;
-          let gridX, gridY;
-          let cellAttempts = 0;
-          
-          // Find an unused grid cell
-          do {
-              gridX = Math.floor(Math.random() * gridSize) - halfGrid;
-              gridY = Math.floor(Math.random() * gridSize) - halfGrid;
-              cellAttempts++;
-          } while (usedAreas.has(`${gridX},${gridY}`) && cellAttempts < 1000);
-          
-          if (cellAttempts >= 1000) continue; // Skip if can't find unused cell
-          
-          usedAreas.add(`${gridX},${gridY}`);
-          
-          // Calculate the center of this grid cell in pixels
-          const cellCenterX = gridX * AREA_SIZE_PIXELS + AREA_SIZE_PIXELS / 2;
-          const cellCenterY = gridY * AREA_SIZE_PIXELS + AREA_SIZE_PIXELS / 2;
-          
-          // Spawn chest at random location within this 70x70 meter area (1750x1750 pixels)
-          const offsetX = (Math.random() - 0.5) * AREA_SIZE_PIXELS * 0.8; // 80% of area to avoid edges
-          const offsetY = (Math.random() - 0.5) * AREA_SIZE_PIXELS * 0.8;
-          
-          const chestX = cellCenterX + offsetX;
-          const chestY = cellCenterY + offsetY;
-          
-          // Check if chest is within exclusion zone (1000x1000 pixels around starting position)
-          const distX = Math.abs(chestX - START_X);
-          const distY = Math.abs(chestY - START_Y);
-          
-          if (distX < EXCLUSION_RADIUS && distY < EXCLUSION_RADIUS) {
-              // Skip this chest - it's too close to starting position
-              continue;
+      // Iterate through all grid cells and spawn one chest per cell (except exclusion zone)
+      // Grid goes from -halfGrid to +halfGrid (inclusive), which is gridSize cells total
+      for (let gridX = -halfGrid; gridX <= halfGrid; gridX++) {
+          for (let gridY = -halfGrid; gridY <= halfGrid; gridY++) {
+              // Calculate the center of this grid cell in pixels
+              const cellCenterX = gridX * AREA_SIZE_PIXELS + AREA_SIZE_PIXELS / 2;
+              const cellCenterY = gridY * AREA_SIZE_PIXELS + AREA_SIZE_PIXELS / 2;
+              
+              // Spawn chest at random location within this 3000x3000 pixel area
+              const offsetX = (Math.random() - 0.5) * AREA_SIZE_PIXELS * 0.8; // 80% of area to avoid edges
+              const offsetY = (Math.random() - 0.5) * AREA_SIZE_PIXELS * 0.8;
+              
+              const chestX = cellCenterX + offsetX;
+              const chestY = cellCenterY + offsetY;
+              
+              // Check if chest is within exclusion zone (1000x1000 pixels around starting position)
+              const distX = Math.abs(chestX - START_X);
+              const distY = Math.abs(chestY - START_Y);
+              
+              if (distX < EXCLUSION_RADIUS && distY < EXCLUSION_RADIUS) {
+                  // Skip this cell - it's too close to starting position
+                  continue;
+              }
+              
+              // Spawn chest in this cell
+              this.treasureChests.push(new TreasureChest(this, chestX, chestY));
           }
-          
-          this.treasureChests.push(new TreasureChest(this, chestX, chestY));
-          chestsSpawned++;
       }
   }
 

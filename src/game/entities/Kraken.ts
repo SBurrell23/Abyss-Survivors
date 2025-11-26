@@ -21,6 +21,12 @@ export class Kraken {
     phase3Hp: number = 30000;
     
     tentacles: {pos: Vector2, angle: number, length: number}[] = [];
+    
+    // Damage cap system: max 49 HP per 100ms window (490 HP per second equivalent)
+    damageCapPerWindow: number = 49;
+    damageThisWindow: number = 0;
+    damageTimer: number = 0;
+    damageWindowDuration: number = 0.1; // 100ms window
 
     constructor(game: Game, x: number, y: number) {
         this.game = game;
@@ -37,6 +43,13 @@ export class Kraken {
     }
 
     update(dt: number) {
+        // Reset damage counter every 100ms window
+        this.damageTimer += dt;
+        if (this.damageTimer >= this.damageWindowDuration) {
+            this.damageThisWindow = 0;
+            this.damageTimer = 0;
+        }
+        
         // Update tentacle lengths based on phase
         const baseLength = 150;
         const phaseLengthMultiplier = this.phase === 1 ? 1.0 : 
@@ -301,11 +314,29 @@ export class Kraken {
         ctx.restore();
     }
     
-    takeDamage(amount: number) {
-        const actualDamage = Math.min(amount, this.hp); // Don't count overkill
+    takeDamage(amount: number, bypassCap: boolean = false) {
+        let cappedDamage = amount;
+        
+        if (!bypassCap) {
+            // Apply damage cap: max 49 HP per 100ms window
+            const remainingDamageBudget = this.damageCapPerWindow - this.damageThisWindow;
+            
+            if (remainingDamageBudget <= 0) {
+                // Already hit damage cap this window, ignore this damage
+                return;
+            } else if (amount > remainingDamageBudget) {
+                // Exceeds remaining budget, cap it
+                cappedDamage = remainingDamageBudget;
+            }
+            
+            // Update damage tracking
+            this.damageThisWindow += cappedDamage;
+        }
+        
+        const actualDamage = Math.min(cappedDamage, this.hp); // Don't count overkill
         this.game.totalDamageDealt += actualDamage;
         
-        this.hp -= amount;
+        this.hp -= cappedDamage;
         if (this.hp <= 0) {
             // Advance to next phase or win
             if (this.phase === 1) {
@@ -315,6 +346,9 @@ export class Kraken {
                 this.hp = this.phase2Hp;
                 // Reset timer
                 this.spawnTimer = 0;
+                // Reset damage cap counter
+                this.damageThisWindow = 0;
+                this.damageTimer = 0;
                 // Play phase change roar (reduced by 35% + 25% = 60% total)
                 this.game.soundManager.playKrakenRoar(0.34125);
             } else if (this.phase === 2) {
@@ -324,6 +358,9 @@ export class Kraken {
                 this.hp = this.phase3Hp;
                 // Reset timer
                 this.spawnTimer = 0;
+                // Reset damage cap counter
+                this.damageThisWindow = 0;
+                this.damageTimer = 0;
                 // Play phase change roar (reduced by 35% + 25% = 60% total)
                 this.game.soundManager.playKrakenRoar(0.39);
             } else {
