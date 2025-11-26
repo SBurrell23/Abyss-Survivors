@@ -1640,16 +1640,64 @@ export class Game {
      const totalWeight = weightedPool.reduce((sum, item) => sum + item.weight, 0);
      let rnd = Math.random() * totalWeight;
      
-     let selectedMonster = weightedPool[0].monster;
-     for (const item of weightedPool) {
-         if (rnd < item.weight) {
-             selectedMonster = item.monster;
-             break;
-         }
-         rnd -= item.weight;
-     }
+    let selectedMonster = weightedPool[0].monster;
+    for (const item of weightedPool) {
+        if (rnd < item.weight) {
+            selectedMonster = item.monster;
+            break;
+        }
+        rnd -= item.weight;
+    }
 
-     this.enemies.push(new Enemy(this, spawnPos.x, spawnPos.y, selectedMonster));
+    // Limit guppies on screen to prevent swarming
+    if (selectedMonster.id === 'fish_small') {
+        const guppyCount = this.enemies.filter(e => e.active && e.stats.id === 'fish_small').length;
+        const maxGuppies = 20; // Max guppies on screen at once
+        if (guppyCount >= maxGuppies) {
+            // Try to spawn a different enemy instead
+            const nonGuppyPool = weightedPool.filter(item => item.monster.id !== 'fish_small');
+            if (nonGuppyPool.length > 0) {
+                const totalNonGuppyWeight = nonGuppyPool.reduce((sum, item) => sum + item.weight, 0);
+                let rnd2 = Math.random() * totalNonGuppyWeight;
+                for (const item of nonGuppyPool) {
+                    if (rnd2 < item.weight) {
+                        selectedMonster = item.monster;
+                        break;
+                    }
+                    rnd2 -= item.weight;
+                }
+            } else {
+                // If only guppies available, don't spawn
+                return;
+            }
+        }
+    }
+
+    // Limit piranhas on screen to prevent swarming
+    if (selectedMonster.id === 'fish_medium') {
+        const piranhaCount = this.enemies.filter(e => e.active && e.stats.id === 'fish_medium').length;
+        const maxPiranhas = 15; // Max piranhas on screen at once
+        if (piranhaCount >= maxPiranhas) {
+            // Try to spawn a different enemy instead
+            const nonPiranhaPool = weightedPool.filter(item => item.monster.id !== 'fish_medium');
+            if (nonPiranhaPool.length > 0) {
+                const totalNonPiranhaWeight = nonPiranhaPool.reduce((sum, item) => sum + item.weight, 0);
+                let rnd3 = Math.random() * totalNonPiranhaWeight;
+                for (const item of nonPiranhaPool) {
+                    if (rnd3 < item.weight) {
+                        selectedMonster = item.monster;
+                        break;
+                    }
+                    rnd3 -= item.weight;
+                }
+            } else {
+                // If only piranhas available, don't spawn
+                return;
+            }
+        }
+    }
+
+    this.enemies.push(new Enemy(this, spawnPos.x, spawnPos.y, selectedMonster));
      
      // Scavenger Protocol Drop? (Only on kill, moved to checkCollisions or Enemy)
   }

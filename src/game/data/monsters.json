@@ -8,7 +8,7 @@
     "color": "#ff6b6b",
     "xp": 5,
     "score": 5,
-    "weight": 50
+    "weight": 25
   },
   {
     "id": "fish_medium",
@@ -19,7 +19,7 @@
     "color": "#ff4444",
     "xp": 10,
     "score": 10,
-    "weight": 30
+    "weight": 15
   },
   {
     "id": "crab",
