@@ -102,7 +102,7 @@
   {
     "id": "homing_tech",
     "name": "Homing Tech",
-    "description": "Torpedoes slightly track enemies",
+    "description": "Torpedoes track enemies",
     "rarity": "legendary",
     "icon": "🔭",
     "type": "special",

@@ -61,6 +61,10 @@ export class Player {
   spawnTargetY: number = 0;
   spawnBobComplete: boolean = false;
   
+  // Bubble trail
+  bubbles: Array<{x: number, y: number, size: number, alpha: number, life: number, maxLife: number}> = [];
+  bubbleSpawnTimer: number = 0;
+  
   // Debug
   isInvulnerable: boolean = false;
 
@@ -124,6 +128,44 @@ export class Player {
      this.propellerRotation += dt * 8; // Rotate 8 radians per second (moderate spin)
      if (this.propellerRotation > Math.PI * 2) {
          this.propellerRotation -= Math.PI * 2;
+     }
+     
+     // Update bubble trail
+     this.bubbleSpawnTimer += dt;
+     if (this.bubbleSpawnTimer >= 0.05) { // Spawn bubble every 0.05 seconds
+         this.bubbleSpawnTimer = 0;
+         // Calculate angle submarine is facing (towards mouse)
+         const mouseScreen = this.game.mousePosition;
+         const worldMouseX = mouseScreen.x + this.game.camera.x;
+         const worldMouseY = mouseScreen.y + this.game.camera.y;
+         const dx = worldMouseX - this.position.x;
+         const dy = worldMouseY - this.position.y;
+         const angle = Math.atan2(dy, dx);
+         
+         // Spawn bubble from back of submarine (propeller area) - further back
+         const backOffsetX = Math.cos(angle + Math.PI) * 20; // Further back (was 15)
+         const backOffsetY = Math.sin(angle + Math.PI) * 20; // Further back (was 15)
+         this.bubbles.push({
+             x: this.position.x + backOffsetX + (Math.random() - 0.5) * 6, // Less spread
+             y: this.position.y + backOffsetY + (Math.random() - 0.5) * 6, // Less spread
+             size: 2 + Math.random() * 3, // 2-5 pixels
+             alpha: 0.8,
+             life: 0.4 + Math.random() * 0.3, // 0.4-0.7 seconds
+             maxLife: 0.4 + Math.random() * 0.3
+         });
+     }
+     
+     // Update existing bubbles
+     for (let i = this.bubbles.length - 1; i >= 0; i--) {
+         const bubble = this.bubbles[i];
+         bubble.life -= dt;
+         bubble.alpha = (bubble.life / bubble.maxLife) * 0.8; // Fade out
+         bubble.y -= dt * 30; // Float upward
+         bubble.x += (Math.random() - 0.5) * dt * 10; // Slight horizontal drift
+         
+         if (bubble.life <= 0) {
+             this.bubbles.splice(i, 1);
+         }
      }
    }
   
@@ -383,10 +425,82 @@ export class Player {
         ctx.scale(1, -1);
     }
 
-    // Draw player submarine as vector graphics (matching propeller style)
-    // Based on 20x12 pixel sprite, scaled by 2
+    // Draw spinning propeller first (behind everything)
+    ctx.save();
     const spriteWidth = 20 * scale;
     const spriteHeight = 12 * scale;
+    const propX = (-spriteWidth / 2 + 1.5 * scale);
+    const propY = (-spriteHeight / 2 + 6 * scale);
+    
+    ctx.translate(propX, propY);
+    ctx.rotate(this.propellerRotation);
+    
+    const bladeLength = 3 * scale * 0.75; // 25% smaller propeller
+    
+    // Draw 4 blades in an X pattern with dark gray outline
+    ctx.strokeStyle = '#3a3a3a';
+    ctx.lineWidth = 2.5 * scale;
+    ctx.lineCap = 'round';
+    
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(bladeLength * 0.7, -bladeLength * 0.7);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(bladeLength * 0.7, bladeLength * 0.7);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-bladeLength * 0.7, -bladeLength * 0.7);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-bladeLength * 0.7, bladeLength * 0.7);
+    ctx.stroke();
+    
+    // Draw blades again in darker gray color
+    ctx.strokeStyle = '#555555';
+    ctx.lineWidth = 1.2 * scale;
+    
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(bladeLength * 0.7, -bladeLength * 0.7);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(bladeLength * 0.7, bladeLength * 0.7);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-bladeLength * 0.7, -bladeLength * 0.7);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-bladeLength * 0.7, bladeLength * 0.7);
+    ctx.stroke();
+    
+    ctx.restore(); // Restore propeller transform
+
+    // Draw bubbles (on top of propeller, but behind sub body)
+    // Convert bubble world positions to local transformed coordinates
+    for (const bubble of this.bubbles) {
+        // Transform bubble world position to local coordinates
+        const localX = bubble.x - this.position.x;
+        const localY = bubble.y - this.position.y;
+        
+        // Rotate to match submarine rotation
+        const cos = Math.cos(-angle);
+        const sin = Math.sin(-angle);
+        const rotatedX = localX * cos - localY * sin;
+        const rotatedY = localX * sin + localY * cos;
+        
+        // Apply flip if needed
+        const finalY = isFlipped ? -rotatedY : rotatedY;
+        
+        ctx.save();
+        ctx.globalAlpha = bubble.alpha;
+        ctx.fillStyle = '#87CEEB';
+        ctx.strokeStyle = '#4682B4';
+        ctx.lineWidth = 0.5;
+        
+        ctx.beginPath();
+        ctx.arc(rotatedX, finalY, bubble.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Draw player submarine body (on top of bubbles and propeller)
+    // spriteWidth and spriteHeight already defined above
     
     // Main body (yellow submarine hull)
     ctx.fillStyle = '#FFD700';
@@ -477,60 +591,6 @@ export class Player {
     ctx.beginPath();
     ctx.arc(windowX - 0.2 * scale, windowY - 0.2 * scale, windowRadius * 0.6, 0, Math.PI * 2);
     ctx.fill();
-
-    // Draw spinning propeller separately
-    ctx.save();
-    // Propeller is on the left side of sprite, at x = -spriteWidth/2 + 1.5 pixels (center of propeller)
-    // In sprite coordinates: x = 1.5, y = 6 (middle of propeller area)
-    const propX = (-spriteWidth / 2 + 1.5 * scale);
-    const propY = (-spriteHeight / 2 + 6 * scale);
-    
-    ctx.translate(propX, propY);
-    ctx.rotate(this.propellerRotation);
-    
-    // Draw propeller blades (simple X shape) - eggshell with black outline
-    const bladeLength = 3 * scale * 0.75; // 25% smaller propeller (was 3, now 2.25)
-    
-    // Draw 4 blades in an X pattern with dark gray outline (slightly darker than propeller)
-    ctx.strokeStyle = '#3a3a3a'; // Dark gray, slightly darker than #555555
-    ctx.lineWidth = 2.5 * scale; // Thicker for outline
-    ctx.lineCap = 'round';
-    
-    ctx.beginPath();
-    // Top-right blade
-    ctx.moveTo(0, 0);
-    ctx.lineTo(bladeLength * 0.7, -bladeLength * 0.7);
-    // Bottom-right blade
-    ctx.moveTo(0, 0);
-    ctx.lineTo(bladeLength * 0.7, bladeLength * 0.7);
-    // Top-left blade
-    ctx.moveTo(0, 0);
-    ctx.lineTo(-bladeLength * 0.7, -bladeLength * 0.7);
-    // Bottom-left blade
-    ctx.moveTo(0, 0);
-    ctx.lineTo(-bladeLength * 0.7, bladeLength * 0.7);
-    ctx.stroke();
-    
-    // Draw blades again in darker gray color (thinner, on top)
-    ctx.strokeStyle = '#555555';
-    ctx.lineWidth = 1.2 * scale;
-    
-    ctx.beginPath();
-    // Top-right blade
-    ctx.moveTo(0, 0);
-    ctx.lineTo(bladeLength * 0.7, -bladeLength * 0.7);
-    // Bottom-right blade
-    ctx.moveTo(0, 0);
-    ctx.lineTo(bladeLength * 0.7, bladeLength * 0.7);
-    // Top-left blade
-    ctx.moveTo(0, 0);
-    ctx.lineTo(-bladeLength * 0.7, -bladeLength * 0.7);
-    // Bottom-left blade
-    ctx.moveTo(0, 0);
-    ctx.lineTo(-bladeLength * 0.7, bladeLength * 0.7);
-    ctx.stroke();
-    
-    ctx.restore();
 
     ctx.restore();
   }
