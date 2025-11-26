@@ -51,47 +51,75 @@ export class UpgradeManager {
       return false;
     });
     
-    // Level restriction: only common upgrades if level <= 3
-    const onlyCommonUpgrades = level <= 3;
+    // Level restriction: only common upgrades if level <= 4
+    const onlyCommonUpgrades = level <= 4;
     
     // Track how many rare/legendary upgrades we've selected
     let rareLegendaryCount = 0;
+    let rareCount = 0; // Track rare upgrades separately
     let legendaryCount = 0;
     const maxRareLegendary = allCommonsMaxed ? count : (depth > 250 ? 1 : 1); // Guarantee at least 1 if depth > 250
     
-    // Depth-based guarantees (disabled if level <= 3)
-    const guaranteeRareOrLegendary = !onlyCommonUpgrades && depth > 250; // At least one purple or orange if depth > 250m
-    // Level-based guarantee: at least one rare if level >= 7
-    const guaranteeRareFromLevel = level >= 7;
+    // Depth-based guarantees (disabled if level <= 4)
+    const guaranteeRareOrLegendary = !onlyCommonUpgrades && depth > 250 && level >= 17; // At least one purple or orange if depth > 250m and level >= 17
+    // Level-based guarantee: at least one rare if level >= 17
+    const guaranteeRareFromLevel = level >= 17;
     // Special case: guarantee legendary ONLY when hitting level 13 exactly
     const guaranteeLegendaryFromLevel = level === 13;
     // Special case: guarantee Multi Shot at level 20 if player doesn't have it
     const playerHasMultiShot = this.playerUpgrades.get('multi_shot');
     const guaranteeMultiShotAtLevel20 = level === 20 && (!playerHasMultiShot || playerHasMultiShot.count === 0);
-    // Special case: guarantee legendary on EVEN level ups if depth >= 500m
-    const guaranteeLegendaryOnEvenLevels = !onlyCommonUpgrades && depth >= 500 && level % 2 === 0;
-    // Legendary upgrades only available at 250 meters or deeper (and level > 3), OR if level === 13, OR if guaranteeing Multi Shot at level 20, OR if depth >= 500m on even levels
-    const allowLegendary = !onlyCommonUpgrades && (depth >= 250 || guaranteeLegendaryFromLevel || guaranteeMultiShotAtLevel20 || guaranteeLegendaryOnEvenLevels);
-    const guaranteeLegendary = (depth > 750 && allowLegendary) || guaranteeLegendaryFromLevel || guaranteeMultiShotAtLevel20 || guaranteeLegendaryOnEvenLevels; // At least one orange if depth > 750m AND at least 250m deep, OR if level === 13, OR if guaranteeing Multi Shot at level 20, OR if depth >= 500m on even levels
+    // Special case: 50% chance for legendary on EVEN level ups if depth >= 500m (not a guarantee)
+    const chanceLegendaryOnEvenLevels = !onlyCommonUpgrades && depth >= 500 && level % 2 === 0;
+    // Legendary upgrades only available at 250 meters or deeper (and level > 4), OR if level === 13, OR if guaranteeing Multi Shot at level 20, OR if depth >= 500m on even levels
+    const allowLegendary = !onlyCommonUpgrades && (depth >= 250 || guaranteeLegendaryFromLevel || guaranteeMultiShotAtLevel20 || chanceLegendaryOnEvenLevels);
+    // Guarantee legendary only if depth > 750m AND level > 40 AND level ends in 3, 6, or 9, OR if level === 13, OR if guaranteeing Multi Shot at level 20
+    const levelEndsIn369 = level > 40 && (level % 10 === 3 || level % 10 === 6 || level % 10 === 9);
+    const guaranteeLegendary = (depth > 750 && allowLegendary && levelEndsIn369) || guaranteeLegendaryFromLevel || guaranteeMultiShotAtLevel20;
     
     while (result.length < count) {
       const rand = Math.random();
       let rarity = 'common';
       
-      // If level <= 3, force common only
+      // If level <= 4, force common only
       if (onlyCommonUpgrades) {
         rarity = 'common';
       } else {
         // Force rare/legendary if we need to guarantee one
         if (guaranteeLegendary && legendaryCount === 0 && result.length === count - 1 && allowLegendary) {
           rarity = 'legendary'; // Force legendary on last slot if needed
-        } else if ((guaranteeRareOrLegendary || guaranteeRareFromLevel) && rareLegendaryCount === 0 && result.length === count - 1) {
-          // Force rare on last slot if we haven't gotten one yet (no legendary if depth < 250)
+        } else if (guaranteeRareOrLegendary && rareLegendaryCount === 0 && result.length === count - 1) {
+          // Force rare/legendary on last slot if we haven't gotten one yet (no legendary if depth < 250)
+          rarity = 'rare';
+        } else if (guaranteeRareFromLevel && rareCount === 0 && result.length === count - 1) {
+          // Force rare on last slot if we haven't gotten a rare yet (even if legendary exists)
           rarity = 'rare';
         } else if (rareLegendaryCount < maxRareLegendary) {
           // Normal random selection
-          if (rand > 0.95 && allowLegendary) rarity = 'legendary';
-          else if (rand > 0.70) rarity = 'rare';
+          // Up to level 17: 50% chance for rare/legendary (if allowed)
+          // After level 17: original chances (5% legendary, 30% rare)
+          if (level < 17) {
+            // 50% chance for rare/legendary
+            if (rand > 0.5) {
+              // If depth > 250m and legendary allowed, prefer legendary, otherwise rare
+              if (allowLegendary && depth > 250) {
+                rarity = 'legendary';
+              } else {
+                rarity = 'rare';
+              }
+            }
+            // Otherwise stays common (rand <= 0.5)
+          } else {
+            // Original chances after level 17
+            // Special: 50% chance for legendary if depth >= 500m and even level
+            if (chanceLegendaryOnEvenLevels && rand > 0.5 && allowLegendary) {
+              rarity = 'legendary';
+            } else if (rand > 0.95 && allowLegendary) {
+              rarity = 'legendary';
+            } else if (rand > 0.70) {
+              rarity = 'rare';
+            }
+          }
         }
       }
 
@@ -148,6 +176,9 @@ export class UpgradeManager {
           if (pick.rarity === 'rare' || pick.rarity === 'legendary') {
             rareLegendaryCount++;
           }
+          if (pick.rarity === 'rare') {
+            rareCount++;
+          }
           if (pick.rarity === 'legendary') {
             legendaryCount++;
           }
@@ -162,6 +193,9 @@ export class UpgradeManager {
         if (pick.rarity === 'rare' || pick.rarity === 'legendary') {
           rareLegendaryCount++;
         }
+        if (pick.rarity === 'rare') {
+          rareCount++;
+        }
         if (pick.rarity === 'legendary') {
           legendaryCount++;
         }
@@ -169,35 +203,6 @@ export class UpgradeManager {
     }
     
     // Final check: ensure guarantees are met
-    // First, check if we need to guarantee legendary on even levels at depth >= 500m
-    if (guaranteeLegendaryOnEvenLevels && legendaryCount === 0) {
-      // Replace a random non-legendary upgrade with a legendary
-      const legendaryCandidates = this.upgrades.filter(u => {
-        if (u.rarity !== 'legendary') return false;
-        // Don't force Multi Shot here if we're also guaranteeing it at level 20
-        if (guaranteeMultiShotAtLevel20 && u.id === 'multi_shot') return false;
-        const playerUpgrade = this.playerUpgrades.get(u.id);
-        if (playerUpgrade && u.maxRank) {
-          return playerUpgrade.count < u.maxRank;
-        }
-        return true;
-      });
-      
-      if (legendaryCandidates.length > 0) {
-        const legendaryPick = legendaryCandidates[Math.floor(Math.random() * legendaryCandidates.length)];
-        // Replace first non-legendary if we have one
-        const replaceIndex = result.findIndex(u => u.rarity !== 'legendary');
-        if (replaceIndex >= 0 && !result.includes(legendaryPick)) {
-          if (result[replaceIndex].rarity === 'rare' || result[replaceIndex].rarity === 'legendary') {
-            rareLegendaryCount--; // Adjust count
-          }
-          result[replaceIndex] = legendaryPick;
-          legendaryCount++;
-          rareLegendaryCount++;
-        }
-      }
-    }
-    
     // Then check if we need to guarantee Multi Shot at level 20
     if (guaranteeMultiShotAtLevel20) {
       const multiShotUpgrade = this.upgrades.find(u => u.id === 'multi_shot');
@@ -214,6 +219,9 @@ export class UpgradeManager {
             if (result[replaceIndex].rarity === 'rare' || result[replaceIndex].rarity === 'legendary') {
               rareLegendaryCount--;
             }
+            if (result[replaceIndex].rarity === 'rare') {
+              rareCount--;
+            }
             if (result[replaceIndex].rarity === 'legendary') {
               legendaryCount--;
             }
@@ -226,7 +234,7 @@ export class UpgradeManager {
       }
     }
     
-    if (guaranteeLegendary && legendaryCount === 0 && !guaranteeMultiShotAtLevel20 && !guaranteeLegendaryOnEvenLevels) {
+    if (guaranteeLegendary && legendaryCount === 0 && !guaranteeMultiShotAtLevel20) {
       // Replace a random non-legendary upgrade with a legendary
       const legendaryCandidates = this.upgrades.filter(u => {
         if (u.rarity !== 'legendary') return false;
@@ -247,19 +255,20 @@ export class UpgradeManager {
           if (result[replaceIndex].rarity === 'rare' || result[replaceIndex].rarity === 'legendary') {
             rareLegendaryCount--; // Adjust count
           }
+          if (result[replaceIndex].rarity === 'rare') {
+            rareCount--; // Adjust rare count
+          }
           result[replaceIndex] = legendaryPick;
           legendaryCount++;
           rareLegendaryCount++;
         }
       }
-    } else if ((guaranteeRareOrLegendary || guaranteeRareFromLevel) && rareLegendaryCount === 0) {
-      // Replace a random common upgrade with a rare (no legendary if depth < 250)
+    } else if (guaranteeRareOrLegendary && rareLegendaryCount === 0) {
+      // Replace a random common upgrade with a rare/legendary (no legendary if depth < 250)
       const rareLegendaryCandidates = this.upgrades.filter(u => {
         if (u.rarity !== 'rare' && u.rarity !== 'legendary') return false;
         // Don't allow legendary upgrades if depth < 250 meters
         if (u.rarity === 'legendary' && !allowLegendary) return false;
-        // For level-based guarantee, prefer rare over legendary
-        if (guaranteeRareFromLevel && u.rarity === 'legendary') return false;
         // Level restrictions: Cryo Rounds only available at level 10+
         if (u.id === 'cryo_rounds' && level < 10) return false;
         // Depth restrictions: Deep Pressure only available at depth >= 500m
@@ -277,9 +286,36 @@ export class UpgradeManager {
         if (replaceIndex >= 0 && !result.includes(rareLegendaryPick)) {
           result[replaceIndex] = rareLegendaryPick;
           rareLegendaryCount++;
+          if (rareLegendaryPick.rarity === 'rare') {
+            rareCount++;
+          }
           if (rareLegendaryPick.rarity === 'legendary') {
             legendaryCount++;
           }
+        }
+      }
+    } else if (guaranteeRareFromLevel && rareCount === 0) {
+      // Replace a random common upgrade with a rare (even if legendary exists)
+      const rareCandidates = this.upgrades.filter(u => {
+        if (u.rarity !== 'rare') return false;
+        // Level restrictions: Cryo Rounds only available at level 10+
+        if (u.id === 'cryo_rounds' && level < 10) return false;
+        // Depth restrictions: Deep Pressure only available at depth >= 500m
+        if (u.id === 'deep_pressure' && depth < 500) return false;
+        const playerUpgrade = this.playerUpgrades.get(u.id);
+        if (playerUpgrade && u.maxRank) {
+          return playerUpgrade.count < u.maxRank;
+        }
+        return true;
+      });
+      
+      if (rareCandidates.length > 0) {
+        const rarePick = rareCandidates[Math.floor(Math.random() * rareCandidates.length)];
+        const replaceIndex = result.findIndex(u => u.rarity === 'common');
+        if (replaceIndex >= 0 && !result.includes(rarePick)) {
+          result[replaceIndex] = rarePick;
+          rareLegendaryCount++;
+          rareCount++;
         }
       }
     }
