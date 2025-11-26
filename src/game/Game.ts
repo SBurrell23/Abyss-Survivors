@@ -636,8 +636,8 @@ export class Game {
           hitKraken: false // Track if kraken has been hit
       });
       
-      // Play ping sound
-      this.soundManager.playSonarPing();
+      // Play ping sound (volume increased by 50%: 0.4 -> 0.6)
+      this.soundManager.playSonarPing(0.6);
   }
   
   sonarPulses: Array<{
@@ -1703,9 +1703,7 @@ export class Game {
   }
 
   spawnInitialChests() {
-      const PIXELS_PER_METER = 25;
-      const AREA_SIZE_METERS = 100; // Keep cell size at 100 meters
-      const AREA_SIZE_PIXELS = AREA_SIZE_METERS * PIXELS_PER_METER; // 2500 pixels
+      const AREA_SIZE_PIXELS = 1750; // Changed from 2500 to 1750 pixels (70 meters)
       const TOTAL_CHESTS = 100;
       
       // Player starting position (where chests should not spawn)
@@ -1713,10 +1711,10 @@ export class Game {
       const START_Y = 75;
       const EXCLUSION_RADIUS = 500; // Half of 1000x1000 area
       
-      // Create a 20x20 grid to cover -25k to +25k pixels (50k / 2500 = 20 cells per side)
-      // Each cell is still 100x100 meters (2500x2500 pixels)
-      const gridSize = 20; // 20x20 grid = 400 cells, covering -25k to +25k
-      const halfGrid = Math.floor(gridSize / 2); // halfGrid = 10, so grid goes from -10 to +9
+      // Create a grid to cover -25k to +25k pixels with 1750 pixel cells (50000 / 1750 ≈ 29 cells per side)
+      // Each cell is 1750x1750 pixels (70x70 meters)
+      const gridSize = Math.ceil(50000 / AREA_SIZE_PIXELS); // 29 cells per side to cover 50k pixels
+      const halfGrid = Math.floor(gridSize / 2); // halfGrid = 14, so grid goes from -14 to +14
       
       const usedAreas = new Set<string>();
       let chestsSpawned = 0;
@@ -1743,7 +1741,7 @@ export class Game {
           const cellCenterX = gridX * AREA_SIZE_PIXELS + AREA_SIZE_PIXELS / 2;
           const cellCenterY = gridY * AREA_SIZE_PIXELS + AREA_SIZE_PIXELS / 2;
           
-          // Spawn chest at random location within this 100x100 meter area
+          // Spawn chest at random location within this 70x70 meter area (1750x1750 pixels)
           const offsetX = (Math.random() - 0.5) * AREA_SIZE_PIXELS * 0.8; // 80% of area to avoid edges
           const offsetY = (Math.random() - 0.5) * AREA_SIZE_PIXELS * 0.8;
           
