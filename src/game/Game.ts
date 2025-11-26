@@ -1332,8 +1332,10 @@ export class Game {
           
           // Hide default death screen stats (they're for regular death, not victory)
           const deathLevel = document.getElementById('death-level');
+          const deathLevelValue = document.getElementById('death-level-value');
           const deathScore = document.getElementById('death-score');
           if (deathLevel) deathLevel.parentElement!.style.display = 'none';
+          if (deathLevelValue) deathLevelValue.parentElement!.style.display = 'none';
           if (deathScore) deathScore.parentElement!.style.display = 'none';
           
           // Remove existing victory stats if any (to prevent duplicates)
