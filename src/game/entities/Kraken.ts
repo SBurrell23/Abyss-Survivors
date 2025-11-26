@@ -315,6 +315,8 @@ export class Kraken {
                 this.hp = this.phase2Hp;
                 // Reset timer
                 this.spawnTimer = 0;
+                // Play phase change roar (reduced by 35% + 25% = 60% total)
+                this.game.soundManager.playKrakenRoar(0.34125);
             } else if (this.phase === 2) {
                 // Phase 2 complete, start Final Phase
                 this.phase = 3;
@@ -322,6 +324,8 @@ export class Kraken {
                 this.hp = this.phase3Hp;
                 // Reset timer
                 this.spawnTimer = 0;
+                // Play phase change roar (reduced by 35% + 25% = 60% total)
+                this.game.soundManager.playKrakenRoar(0.39);
             } else {
                 // Final Phase complete - win!
                 this.hp = 0;

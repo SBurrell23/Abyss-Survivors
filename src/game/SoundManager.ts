@@ -216,15 +216,21 @@ export class SoundManager {
         // Use a dramatic sound - maybe explosion or chimes
         this.playSound(this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_1.wav'), volume, 0.6);
     }
+    
+    playKrakenRoar(volume: number = 0.7, isEntry: boolean = false) {
+        // Use the actual kraken roar sounds
+        if (isEntry) {
+            // Entry roar when first entering the fight
+            this.playSound(this.getSoundUrl('AUDIO/Custom/kraken entry roar.mp3'), volume, 1.0);
+        } else {
+            // Phase change roar
+            this.playSound(this.getSoundUrl('AUDIO/Custom/kraken roar phase change.mp3'), volume, 1.0);
+        }
+    }
 
-    playVictory(volume: number = 0.7) {
-        const sounds = [
-            this.getSoundUrl('AUDIO/Confetti/SFX_Confetti_Explosion_Bright_1.wav'),
-            this.getSoundUrl('AUDIO/Confetti/SFX_Confetti_Explosion_Bright_2.wav'),
-            this.getSoundUrl('AUDIO/Confetti/SFX_Confetti_Explosion_Bright_3.wav'),
-        ];
-        const sound = sounds[Math.floor(Math.random() * sounds.length)];
-        this.playSound(sound, volume);
+    playVictory(volume: number = 0.8) {
+        // Use success bright rich sound for victory
+        this.playSound(this.getSoundUrl('AUDIO/UI/Success/SFX_UI_Success_Bright_Rich_1.wav'), volume);
     }
 
     playUIClick(volume: number = 0.2) {

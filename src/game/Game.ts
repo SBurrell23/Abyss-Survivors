@@ -527,11 +527,11 @@ export class Game {
           this.player.isInvulnerable = e.target.checked;
       };
       
-      // Speed Checkbox (5x speed)
+      // Speed Checkbox (10x speed)
       const normalSpeed = 250;
       speedCheckbox.onchange = (e: any) => {
           if (e.target.checked) {
-              this.player.speed = normalSpeed * 5; // 1250
+              this.player.speed = normalSpeed * 10; // 2500
           } else {
               this.player.speed = normalSpeed; // 250
           }
@@ -782,9 +782,7 @@ export class Game {
               }
           }
           
-          // Draw trench hole (dark void)
-          ctx.fillStyle = '#000010'; // Almost black blue
-          ctx.fillRect(trenchLeft, floorY, trenchWidth, 2000);
+          // Trench will be drawn separately after seafloor but before entities
       } else {
           // No trench yet, draw full sand layer with dithering
           for (let sx = sandStartX; sx <= sandEndX; sx += sandDitherStep) {
@@ -961,6 +959,29 @@ export class Game {
               drawSeaweed(8, x + step/2, floorY - height, offset8, 1.5, 8);
           }
       }
+  }
+  
+  drawTrench(ctx: CanvasRenderingContext2D) {
+      // Don't draw trench during boss fight
+      if (this.isBossFight) return;
+      
+      if (this.trenchX === null) return;
+      
+      const MAX_DEPTH_METERS = 1000;
+      const PIXELS_PER_METER = 25;
+      const floorY = MAX_DEPTH_METERS * PIXELS_PER_METER;
+      const trenchWidth = 500;
+      const trenchLeft = this.trenchX - trenchWidth/2;
+      
+      // Draw trench hole with gradient (dark void)
+      // Create gradient from water color at top to dark void at bottom
+      const gradient = ctx.createLinearGradient(trenchLeft, floorY, trenchLeft, floorY + 2000);
+      gradient.addColorStop(0, '#001e36'); // Match background water color at top
+      gradient.addColorStop(0.1, '#000820'); // Transition color - faster transition
+      gradient.addColorStop(0.3, '#000410'); // Darker transition
+      gradient.addColorStop(1, '#000010'); // Almost black blue at bottom
+      ctx.fillStyle = gradient;
+      ctx.fillRect(trenchLeft, floorY, trenchWidth, 2000);
   }
   
   setupRestart() {
@@ -1311,9 +1332,33 @@ export class Game {
     const PIXELS_PER_METER = 25;
     const MAX_DEPTH_PIXELS = MAX_DEPTH_METERS * PIXELS_PER_METER;
 
-    // Clamp player Y to sea floor
-    if (this.player.position.y > MAX_DEPTH_PIXELS) {
-        this.player.position.y = MAX_DEPTH_PIXELS;
+    // Clamp player Y to top of sand layer (allow deeper if in trench)
+    // The sand layer starts at MAX_DEPTH_PIXELS, but has an uneven top that can extend up to 15 pixels
+    // So we'll stop the player at MAX_DEPTH_PIXELS - 15 to keep them at the top of the sand
+    const sandTopY = MAX_DEPTH_PIXELS - 15;
+    
+    if (this.trenchX !== null) {
+      const trenchWidth = 500;
+      const trenchLeft = this.trenchX - trenchWidth/2;
+      const trenchRight = this.trenchX + trenchWidth/2;
+      const isInTrenchX = this.player.position.x >= trenchLeft && this.player.position.x <= trenchRight;
+      
+      // If in trench, allow going deeper (up to 800 pixels below seabed to allow reaching boss trigger at 750)
+      if (isInTrenchX) {
+        if (this.player.position.y > MAX_DEPTH_PIXELS + 800) {
+          this.player.position.y = MAX_DEPTH_PIXELS + 800;
+        }
+      } else {
+        // If not in trench, prevent going below top of sand layer
+        if (this.player.position.y > sandTopY) {
+          this.player.position.y = sandTopY;
+        }
+      }
+    } else {
+      // No trench yet, prevent going below top of sand layer
+      if (this.player.position.y > sandTopY) {
+        this.player.position.y = sandTopY;
+      }
     }
     // Clamp player Y to surface
     if (this.player.position.y < 30) {
@@ -1339,14 +1384,15 @@ export class Game {
         const trenchLeft = this.trenchX - trenchWidth/2;
         const trenchRight = this.trenchX + trenchWidth/2;
         
-        // Check if player is at seabed level (within 50 pixels of floor)
+        // Check if player has traveled deep into the trench (farther south/deeper)
         const floorY = MAX_DEPTH_PIXELS;
-        const isAtSeabed = Math.abs(this.player.position.y - floorY) < 50;
+        // Require player to be at least 750 pixels below the seabed floor (5x deeper - 150 * 5)
+        const isDeepInTrench = this.player.position.y > floorY + 750;
         
         // Check if player is within trench bounds horizontally
         const isInTrenchX = this.player.position.x >= trenchLeft && this.player.position.x <= trenchRight;
         
-        if (isAtSeabed && isInTrenchX) {
+        if (isDeepInTrench && isInTrenchX) {
             this.enterBossFight();
         }
     }
@@ -1894,7 +1940,8 @@ export class Game {
       const depthMeter = document.getElementById('depth-meter-container');
       if (depthMeter) depthMeter.style.display = 'none';
       
-      this.soundManager.playBossFightEntry();
+      // Play kraken entry roar (reduced by 40%)
+      this.soundManager.playKrakenRoar(0.48, true);
   }
   
   spawnBossObstacles(centerX: number, centerY: number, arenaSize: number) {
@@ -2561,7 +2608,14 @@ export class Game {
         }
     }
 
-    // Draw Game Entities
+    // Draw Sea Floor first (only if not boss fight)
+    if (!this.isBossFight) {
+        this.drawSeaFloor(this.ctx);
+        // Draw trench after seafloor but before entities
+        this.drawTrench(this.ctx);
+    }
+
+    // Draw Game Entities (after seafloor and trench so they appear in front)
     this.treasureChests.forEach(c => c.draw(this.ctx));
     this.xpOrbs.forEach(o => o.draw(this.ctx));
     this.healthPacks.forEach(hp => hp.draw(this.ctx));
@@ -2601,11 +2655,6 @@ export class Game {
     if (this.kraken && this.isBossFight) this.kraken.draw(this.ctx);
     this.projectiles.forEach(p => p.draw(this.ctx));
     this.player.draw(this.ctx);
-    
-    // Draw Sea Floor (only if not boss fight)
-    if (!this.isBossFight) {
-        this.drawSeaFloor(this.ctx);
-    }
 
     this.ctx.restore();
     
@@ -2617,6 +2666,20 @@ export class Game {
         this.ctx.shadowColor = 'black';
         this.ctx.shadowBlur = 5;
         
+        // Main message (on bottom)
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = 'bold 26px sans-serif';
+        this.ctx.textAlign = 'center';
+        const searchText = "Search the seabed! Find the abyssal trench!";
+        const searchY = this.canvas.height - 55;
+        // Draw black outline
+        this.ctx.strokeStyle = 'black';
+        this.ctx.lineWidth = 3;
+        this.ctx.strokeText(searchText, this.canvas.width/2, searchY);
+        // Draw filled text
+        this.ctx.fillText(searchText, this.canvas.width/2, searchY);
+        
+        // Warning messages (above the search message)
         if (this.trenchX !== null) {
              const dist = Math.abs(this.player.position.x - this.trenchX);
              const distMeters = dist / 25; // Convert pixels to meters
@@ -2624,18 +2687,30 @@ export class Game {
              // Check if going wrong way (more than 300m away)
              if (distMeters > 300) {
                  this.ctx.fillStyle = 'red';
-                 this.ctx.fillText("The sonar shows only flat in this direction!", this.canvas.width/2, this.canvas.height - 60);
+                 this.ctx.font = 'bold 24px sans-serif';
+                 const wrongText = "The sonar shows only flat in this direction!";
+                 const wrongY = this.canvas.height - 95;
+                 // Draw black outline
+                 this.ctx.strokeStyle = 'black';
+                 this.ctx.lineWidth = 3;
+                 this.ctx.strokeText(wrongText, this.canvas.width/2, wrongY);
+                 // Draw filled text
+                 this.ctx.fillText(wrongText, this.canvas.width/2, wrongY);
              }
              // Check if going right way and within 100m
              else if (distMeters <= 100) {
                  this.ctx.fillStyle = 'green';
-                 this.ctx.fillText("The sonar is pinging something very large ahead!", this.canvas.width/2, this.canvas.height - 60);
+                 this.ctx.font = 'bold 24px sans-serif';
+                 const largeText = "The sonar is pinging something very large ahead!";
+                 const largeY = this.canvas.height - 95;
+                 // Draw black outline
+                 this.ctx.strokeStyle = 'black';
+                 this.ctx.lineWidth = 3;
+                 this.ctx.strokeText(largeText, this.canvas.width/2, largeY);
+                 // Draw filled text
+                 this.ctx.fillText(largeText, this.canvas.width/2, largeY);
              }
         }
-        
-        // Main message
-        this.ctx.fillStyle = 'white';
-        this.ctx.fillText("Search the seabed! Find the abyssal trench!", this.canvas.width/2, this.canvas.height - 100);
         
         this.ctx.restore();
     }
