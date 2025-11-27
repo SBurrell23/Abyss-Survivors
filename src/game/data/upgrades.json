@@ -224,18 +224,6 @@
     "maxRank": 3
   },
   {
-    "id": "xp_multiplier",
-    "name": "XP Multiplier",
-    "description": "Increases XP gained by an additional +10%",
-    "rarity": "common",
-    "icon": "⭐",
-    "type": "stat",
-    "stat": "xpMultiplier",
-    "value": 1.1,
-    "op": "multiply",
-    "maxRank": 3
-  },
-  {
     "id": "projectile_size",
     "name": "Thick Torpedoes",
     "description": "Increases torpedo size by 20%",
