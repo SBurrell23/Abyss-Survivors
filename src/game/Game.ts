@@ -1549,8 +1549,21 @@ export class Game {
     // No longer spawning chests randomly - they're all spawned at start
 
     // Spawner logic
-    // Spawn rate increases with depth
-    const spawnChance = 0.02 + (this.depth / 1000) * 0.13;
+    let spawnChance: number;
+    
+    if (this.isBossFight && this.kraken) {
+        // Special spawn rates for kraken fight phases
+        if (this.kraken.phase === 1) {
+            spawnChance = 0.08; // 8% per frame
+        } else if (this.kraken.phase === 2) {
+            spawnChance = 0.10; // 10% per frame
+        } else { // Phase 3
+            spawnChance = 0.14; // 14% per frame
+        }
+    } else {
+        // Normal spawn rate increases with depth
+        spawnChance = 0.02 + (this.depth / 1000) * 0.16; // 18% at 1000m
+    }
     
     if (Math.random() < spawnChance) { 
        this.spawnEnemy();
@@ -1573,51 +1586,120 @@ export class Game {
   }
 
   spawnEnemy() {
-     // Spawn enemy completely off-screen using camera bounds
-     // Calculate diagonal distance to ensure off-screen spawning in all directions
+     // During boss fight, spawn enemies within arena bounds but off-screen
+     // Otherwise, spawn off-screen relative to player
+     let spawnPos: Vector2 | null = null;
+     let attempts = 0;
+     const maxAttempts = 20; // Increased attempts for boss fight arena constraints
+     
+     // Calculate diagonal distance to ensure off-screen spawning
      const diagonalDist = Math.sqrt(this.canvas.width ** 2 + this.canvas.height ** 2) / 2;
      const minSpawnDist = diagonalDist + 100; // Add buffer to ensure completely off-screen
      
-     // Try multiple angles to find a valid spawn position
-     let spawnPos: Vector2 | null = null;
-     let attempts = 0;
-     const maxAttempts = 10;
+     // Screen bounds for off-screen check
+     const screenLeft = this.camera.x;
+     const screenRight = this.camera.x + this.canvas.width;
+     const screenTop = this.camera.y;
+     const screenBottom = this.camera.y + this.canvas.height;
+     const buffer = 50;
      
      while (!spawnPos && attempts < maxAttempts) {
          attempts++;
-         const angle = Math.random() * Math.PI * 2;
-         const candidatePos = new Vector2(
-            this.player.position.x + Math.cos(angle) * minSpawnDist,
-            this.player.position.y + Math.sin(angle) * minSpawnDist
-         );
          
-         // Check if position is off-screen using camera bounds
-         const screenLeft = this.camera.x;
-         const screenRight = this.camera.x + this.canvas.width;
-         const screenTop = this.camera.y;
-         const screenBottom = this.camera.y + this.canvas.height;
+         let candidatePos: Vector2;
          
-         // Ensure spawn is completely outside viewport with buffer
-         const buffer = 50;
-         const isOffScreen = 
-             candidatePos.x < screenLeft - buffer ||
-             candidatePos.x > screenRight + buffer ||
-             candidatePos.y < screenTop - buffer ||
-             candidatePos.y > screenBottom + buffer;
-         
-         // Prevent spawning above surface
-         if (isOffScreen && candidatePos.y >= 50) {
-             spawnPos = candidatePos;
+         if (this.isBossFight && this.arenaBounds) {
+             // During boss fight: spawn within arena bounds but off-screen
+             // Pick a random edge of the arena that's off-screen
+             const edge = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+             
+             if (edge === 0) { // Top edge
+                 candidatePos = new Vector2(
+                     this.arenaBounds.minX + Math.random() * (this.arenaBounds.maxX - this.arenaBounds.minX),
+                     this.arenaBounds.minY - buffer
+                 );
+             } else if (edge === 1) { // Right edge
+                 candidatePos = new Vector2(
+                     this.arenaBounds.maxX + buffer,
+                     this.arenaBounds.minY + Math.random() * (this.arenaBounds.maxY - this.arenaBounds.minY)
+                 );
+             } else if (edge === 2) { // Bottom edge
+                 candidatePos = new Vector2(
+                     this.arenaBounds.minX + Math.random() * (this.arenaBounds.maxX - this.arenaBounds.minX),
+                     this.arenaBounds.maxY + buffer
+                 );
+             } else { // Left edge
+                 candidatePos = new Vector2(
+                     this.arenaBounds.minX - buffer,
+                     this.arenaBounds.minY + Math.random() * (this.arenaBounds.maxY - this.arenaBounds.minY)
+                 );
+             }
+             
+             // Ensure it's off-screen
+             const isOffScreen = 
+                 candidatePos.x < screenLeft - buffer ||
+                 candidatePos.x > screenRight + buffer ||
+                 candidatePos.y < screenTop - buffer ||
+                 candidatePos.y > screenBottom + buffer;
+             
+             if (isOffScreen) {
+                 spawnPos = candidatePos;
+             }
+         } else {
+             // Normal spawning: off-screen relative to player
+             const angle = Math.random() * Math.PI * 2;
+             candidatePos = new Vector2(
+                this.player.position.x + Math.cos(angle) * minSpawnDist,
+                this.player.position.y + Math.sin(angle) * minSpawnDist
+             );
+             
+             // Check if position is off-screen
+             const isOffScreen = 
+                 candidatePos.x < screenLeft - buffer ||
+                 candidatePos.x > screenRight + buffer ||
+                 candidatePos.y < screenTop - buffer ||
+                 candidatePos.y > screenBottom + buffer;
+             
+             // Prevent spawning above surface
+             if (isOffScreen && candidatePos.y >= 50) {
+                 spawnPos = candidatePos;
+             }
          }
      }
      
      // If we couldn't find a valid position after attempts, use a safe fallback
      if (!spawnPos) {
-         // Spawn far to the right of the screen as fallback
-         spawnPos = new Vector2(
-             this.camera.x + this.canvas.width + 200,
-             Math.max(50, this.player.position.y + (Math.random() - 0.5) * this.canvas.height)
-         );
+         if (this.isBossFight && this.arenaBounds) {
+             // Fallback: spawn at a random edge of the arena
+             const edge = Math.floor(Math.random() * 4);
+             if (edge === 0) {
+                 spawnPos = new Vector2(
+                     this.arenaBounds.minX + Math.random() * (this.arenaBounds.maxX - this.arenaBounds.minX),
+                     this.arenaBounds.minY - 100
+                 );
+             } else if (edge === 1) {
+                 spawnPos = new Vector2(
+                     this.arenaBounds.maxX + 100,
+                     this.arenaBounds.minY + Math.random() * (this.arenaBounds.maxY - this.arenaBounds.minY)
+                 );
+             } else if (edge === 2) {
+                 spawnPos = new Vector2(
+                     this.arenaBounds.minX + Math.random() * (this.arenaBounds.maxX - this.arenaBounds.minX),
+                     this.arenaBounds.maxY + 100
+                 );
+             } else {
+                 spawnPos = new Vector2(
+                     this.arenaBounds.minX - 100,
+                     this.arenaBounds.minY + Math.random() * (this.arenaBounds.maxY - this.arenaBounds.minY)
+                 );
+             }
+         } else {
+             // Normal fallback: spawn far to the right of the screen
+             spawnPos = new Vector2(
+                 this.camera.x + this.canvas.width + 200,
+                 Math.max(50, this.player.position.y + (Math.random() - 0.5) * this.canvas.height)
+             );
+         }
      }
      
      const monsters = monstersData as MonsterStats[];
