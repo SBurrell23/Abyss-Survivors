@@ -1170,7 +1170,7 @@ export class Game {
       this.soundManager.playWaterSplash();
       
       // Start ambient background music loop
-      const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.15 : 0;
+      const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.195 : 0;
       this.soundManager.playAmbientLoop(ambientVolume);
       
       // Start game loop
@@ -1231,7 +1231,7 @@ export class Game {
     // Play water splash sound when game starts
     this.soundManager.playWaterSplash();
     // Start ambient background music loop (volume will be set based on settings)
-    const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.15 : 0;
+    const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.195 : 0;
     this.soundManager.playAmbientLoop(ambientVolume);
     requestAnimationFrame(this.loop.bind(this));
   }

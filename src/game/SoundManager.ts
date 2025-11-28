@@ -287,7 +287,7 @@ export class SoundManager {
         );
     }
 
-    async playAmbientLoop(volume: number = 0.15) {
+    async playAmbientLoop(volume: number = 0.195) {
         if (!this.audioContext) {
             await this.initAudioContext();
             if (!this.audioContext) return;
@@ -359,8 +359,8 @@ export class SoundManager {
     // Update ambient volume when master volume changes
     updateAmbientVolume() {
         if (this.ambientGainNode) {
-            // Set to 0 if disabled, otherwise 15% of master volume
-            const baseVolume = this.ambientSoundEnabled ? 0.15 : 0;
+            // Set to 0 if disabled, otherwise 19.5% of master volume (30% increase from 15%)
+            const baseVolume = this.ambientSoundEnabled ? 0.195 : 0;
             this.ambientGainNode.gain.value = baseVolume * this.masterVolume;
         }
     }
