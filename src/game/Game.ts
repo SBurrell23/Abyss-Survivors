@@ -922,7 +922,8 @@ export class Game {
       };
       
       // Draw deep earth with random dithering texture (800px deep, but only visible portion)
-      const ditherStep = 8;
+      // Increased dither step to reduce iterations and improve performance
+      const ditherStep = 12;
       const deepEarthDepth = 800; // Draw 800px deep as requested
       const startDitherX = Math.floor(this.camera.x / ditherStep) * ditherStep;
       const endDitherX = startDitherX + this.canvas.width + ditherStep * 2;
@@ -930,22 +931,25 @@ export class Game {
       // Draw 800px deep, but limit to what's visible on screen
       const endDitherY = Math.min(startDitherY + deepEarthDepth, this.camera.y + this.canvas.height + 50);
       
-      // Batch fill operations
+      // Batch fill operations - cache fillStyle changes
+      let currentFillStyle = deepEarthColor;
       ctx.fillStyle = deepEarthColor;
       for (let dx = startDitherX; dx <= endDitherX; dx += ditherStep) {
           for (let dy = startDitherY; dy <= endDitherY; dy += ditherStep) {
               const rand = seededRandom(dx, dy);
-              if (rand > 0.5) {
-                  ctx.fillStyle = deepEarthColor;
-              } else {
-                  ctx.fillStyle = deepEarthColor2;
+              const newFillStyle = rand > 0.5 ? deepEarthColor : deepEarthColor2;
+              // Only change fillStyle if different (reduces state changes)
+              if (newFillStyle !== currentFillStyle) {
+                  ctx.fillStyle = newFillStyle;
+                  currentFillStyle = newFillStyle;
               }
               ctx.fillRect(dx, dy, ditherStep + 1, ditherStep + 1);
           }
       } 
 
       // Draw Sand Layer with dithering and gradient - but skip trench area
-      const sandDitherStep = 6;
+      // Increased step size to reduce iterations and improve performance
+      const sandDitherStep = 8;
       const sandStartX = Math.floor(this.camera.x / sandDitherStep) * sandDitherStep;
       const sandEndX = sandStartX + this.canvas.width + sandDitherStep;
       const sandLayerHeight = 50;
@@ -961,6 +965,16 @@ export class Game {
           const trenchRight = this.trenchX + trenchWidth/2;
           
           // Draw sand with dithering on left side
+          // Pre-calculate color strings to avoid repeated string concatenation
+          const colorCache = new Map<string, string>();
+          const getColorString = (r: number, g: number, b: number): string => {
+              const key = `${r},${g},${b}`;
+              if (!colorCache.has(key)) {
+                  colorCache.set(key, `rgb(${r},${g},${b})`);
+              }
+              return colorCache.get(key)!;
+          };
+          
           for (let sx = sandStartX; sx <= sandEndX; sx += sandDitherStep) {
               if (sx + sandDitherStep/2 >= trenchLeft && sx + sandDitherStep/2 <= trenchRight) continue;
               if (sx + sandDitherStep < this.camera.x || sx > this.camera.x + this.canvas.width) continue;
@@ -982,7 +996,7 @@ export class Game {
                   const finalG = Math.max(0, Math.min(255, g + ditherVariation * 20));
                   const finalB = Math.max(0, Math.min(255, b + ditherVariation * 20));
                   
-                  ctx.fillStyle = `rgb(${finalR},${finalG},${finalB})`;
+                  ctx.fillStyle = getColorString(finalR, finalG, finalB);
                   ctx.fillRect(sx, sy, sandDitherStep + 1, sandDitherStep + 1);
               }
           }
@@ -990,6 +1004,16 @@ export class Game {
           // Trench will be drawn separately after seafloor but before entities
       } else {
           // No trench yet, draw full sand layer with dithering
+          // Pre-calculate color strings to avoid repeated string concatenation
+          const colorCache = new Map<string, string>();
+          const getColorString = (r: number, g: number, b: number): string => {
+              const key = `${r},${g},${b}`;
+              if (!colorCache.has(key)) {
+                  colorCache.set(key, `rgb(${r},${g},${b})`);
+              }
+              return colorCache.get(key)!;
+          };
+          
           for (let sx = sandStartX; sx <= sandEndX; sx += sandDitherStep) {
               for (let sy = floorY; sy < floorY + sandLayerHeight; sy += sandDitherStep) {
                   const noise = Math.sin(sx * 0.15 + sy * 0.1) + Math.sin(sx * 0.31 + sy * 0.27) * 0.5;
@@ -1008,7 +1032,7 @@ export class Game {
                   const finalG = Math.max(0, Math.min(255, g + ditherVariation * 20));
                   const finalB = Math.max(0, Math.min(255, b + ditherVariation * 20));
                   
-                  ctx.fillStyle = `rgb(${finalR},${finalG},${finalB})`;
+                  ctx.fillStyle = getColorString(finalR, finalG, finalB);
                   ctx.fillRect(sx, sy, sandDitherStep + 1, sandDitherStep + 1);
               }
           }
@@ -1016,7 +1040,8 @@ export class Game {
 
       // Procedural details
       // Iterate across the screen width in steps
-      const step = 40;
+      // Increased step size to reduce seaweed drawing frequency and improve performance
+      const step = 60;
       // Align startX to grid to prevent jitter when moving
       const startX = Math.floor(this.camera.x / step) * step;
       const endX = startX + this.canvas.width + step;
@@ -1049,7 +1074,8 @@ export class Game {
           const height = 10 + noise * 5;
           
           // Draw uneven sand top with random dithering (only visible portion)
-          const topSandDitherStep = 4;
+          // Increased step size to reduce iterations and improve performance
+          const topSandDitherStep = 6;
           const topSandStartX = Math.max(x, this.camera.x);
           const topSandEndX = Math.min(x + step + 1, this.camera.x + this.canvas.width);
           const topSandStartY = floorY - height;
@@ -1060,6 +1086,16 @@ export class Game {
           if (topSandStartX < topSandEndX && topSandStartY < topSandEndY) {
               const seabedBottom = floorY + 50;
               const maxDistance = 50 + height;
+              
+              // Pre-calculate color strings to avoid repeated string concatenation
+              const colorCache = new Map<string, string>();
+              const getColorString = (r: number, g: number, b: number): string => {
+                  const key = `${r},${g},${b}`;
+                  if (!colorCache.has(key)) {
+                      colorCache.set(key, `rgb(${r},${g},${b})`);
+                  }
+                  return colorCache.get(key)!;
+              };
               
               for (let tsx = topSandStartX; tsx < topSandEndX; tsx += topSandDitherStep) {
                   for (let tsy = topSandStartY; tsy < topSandEndY; tsy += topSandDitherStep) {
@@ -1081,7 +1117,7 @@ export class Game {
                       const finalG = Math.max(0, Math.min(255, baseG + variation));
                       const finalB = Math.max(0, Math.min(255, baseB + variation));
                       
-                      ctx.fillStyle = `rgb(${finalR},${finalG},${finalB})`;
+                      ctx.fillStyle = getColorString(finalR, finalG, finalB);
                       ctx.fillRect(tsx, tsy, topSandDitherStep + 1, topSandDitherStep + 1);
                   }
               }
