@@ -47,6 +47,9 @@ export class Game {
   upgradeManager: UpgradeManager;
   soundManager: SoundManager;
   
+  // UI element references
+  musicTrackSelectElement: HTMLSelectElement | null = null;
+  
   // Track upgrades that have been seen in level up menu
   seenUpgrades: Set<string> = new Set();
   
@@ -155,6 +158,11 @@ export class Game {
 
     this.soundManager = new SoundManager();
     this.soundManager.loadSettings();
+    
+    // Set up callback to update music track selector when music changes
+    this.soundManager.setOnMusicTrackChanged(() => {
+        this.updateMusicTrackSelector();
+    });
     this.player = new Player(this, 0, 75); // Start at y=75 (below surface at y=0)
     this.upgradeManager = new UpgradeManager(this);
     
@@ -207,6 +215,8 @@ export class Game {
           this.isPaused = true;
           this.soundManager.playUIClick();
           this.updateSettingsButtonHighlight();
+          // Update music track selector to show currently playing track
+          this.updateMusicTrackSelector();
       };
       
       const closeMenu = () => {
@@ -265,6 +275,9 @@ export class Game {
           this.soundManager.setSelectedMusicTrack(trackName);
           this.soundManager.playUIClick();
       };
+      
+      // Store reference to musicTrackSelect for updating
+      this.musicTrackSelectElement = musicTrackSelect;
       
       // Update music checkbox from saved value
       const musicEnabled = this.soundManager.getMusicEnabled();
@@ -457,6 +470,18 @@ export class Game {
           settingsBtn.classList.add('active');
       } else {
           settingsBtn.classList.remove('active');
+      }
+  }
+  
+  updateMusicTrackSelector() {
+      if (!this.musicTrackSelectElement) return;
+      
+      // Get the currently playing track (not the selected one)
+      const currentTrack = this.soundManager.getCurrentMusicTrack();
+      
+      // If a track is currently playing and it's not boss music, update the dropdown
+      if (currentTrack) {
+          this.musicTrackSelectElement.value = currentTrack;
       }
   }
 
@@ -803,7 +828,7 @@ export class Game {
       });
       
       // Play ping sound (volume increased by 50%: 0.4 -> 0.6)
-      this.soundManager.playSonarPing(0.6);
+      this.soundManager.playSonarPing(0.75);
   }
   
   sonarPulses: Array<{
@@ -1330,7 +1355,7 @@ export class Game {
       this.soundManager.playWaterSplash();
       
       // Start ambient background music loop
-      const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.195 : 0;
+      const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.24375 : 0;
       this.soundManager.playAmbientLoop(ambientVolume);
       
       // NUCLEAR OPTION: Force stop ALL music immediately

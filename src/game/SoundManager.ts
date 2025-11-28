@@ -34,6 +34,7 @@ export class SoundManager {
     private loopTrack: boolean = false; // Loop current track (default OFF)
     private currentTrackIndex: number = 0; // Current index in AVAILABLE_MUSIC_TRACKS for sequential playback
     private allMusicSources: Set<AudioBufferSourceNode> = new Set(); // Track ALL music sources
+    private onMusicTrackChanged: ((track: string | null) => void) | null = null; // Callback when music track changes
 
     constructor() {
         // Initialize audio context on first user interaction
@@ -179,7 +180,7 @@ export class SoundManager {
         this.playSound(sound, volume);
     }
 
-    playExplosion(volume: number = 0.25) {
+    playExplosion(volume: number = 0.30) {
         // Throttle explosion sounds to prevent audio spam (especially during kraken fights)
         const now = performance.now();
         if (now - this.lastExplosionSoundTime < this.explosionSoundCooldown) {
@@ -201,7 +202,7 @@ export class SoundManager {
         this.playSound(this.getSoundUrl('AUDIO/Chimes/SFX_Chimes_Glowing_Stars_1.wav'), volume);
     }
     
-    playSonarPing(volume: number = 0.4) {
+    playSonarPing(volume: number = 0.5) {
         // Play a ping-like sound for sonar pulse
         this.playSound(this.getSoundUrl('AUDIO/Custom/sonar-ping-290188.mp3'), volume, 1.0);
     }
@@ -315,7 +316,7 @@ export class SoundManager {
         );
     }
 
-    async playAmbientLoop(volume: number = 0.195) {
+    async playAmbientLoop(volume: number = 0.24375) {
         if (!this.audioContext) {
             await this.initAudioContext();
             if (!this.audioContext) return;
@@ -388,7 +389,7 @@ export class SoundManager {
     updateAmbientVolume() {
         if (this.ambientGainNode) {
             // Set to 0 if disabled, otherwise 19.5% of master volume (30% increase from 15%)
-            const baseVolume = this.ambientSoundEnabled ? 0.195 : 0;
+            const baseVolume = this.ambientSoundEnabled ? 0.24375 : 0;
             this.ambientGainNode.gain.value = baseVolume * this.masterVolume;
         }
     }
@@ -463,6 +464,19 @@ export class SoundManager {
 
     getSelectedMusicTrack(): string {
         return this.selectedMusicTrack;
+    }
+    
+    getCurrentMusicTrack(): string | null {
+        // Return the currently playing track (not the selected one)
+        // If boss music is playing, return null (don't show boss music in dropdown)
+        if (this.currentMusicTrack === MUSIC_TRACKS.BOSS) {
+            return null;
+        }
+        return this.currentMusicTrack;
+    }
+    
+    setOnMusicTrackChanged(callback: ((track: string | null) => void) | null) {
+        this.onMusicTrackChanged = callback;
     }
 
     setLoopTrack(enabled: boolean) {
@@ -570,6 +584,10 @@ export class SoundManager {
                 this.currentMusicTrack = trackName;
                 // Track this source
                 this.allMusicSources.add(source);
+                // Notify callback if track changed (only for non-boss music)
+                if (this.onMusicTrackChanged && trackName !== MUSIC_TRACKS.BOSS) {
+                    this.onMusicTrackChanged(trackName);
+                }
                 source.start(0);
             };
             
