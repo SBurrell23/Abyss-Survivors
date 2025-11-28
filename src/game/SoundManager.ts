@@ -1,11 +1,17 @@
 // Music track configuration - easily extensible for future tracks
 export const MUSIC_TRACKS = {
-    NORMAL: 'Aquatic Pulse - game music.mp3',  // Normal gameplay music
+    NORMAL: 'Tidal Waves.mp3',  // Default normal gameplay music
     BOSS: 'kraken-boss-music.mp3',            // Kraken boss fight music
-    // Add more tracks here in the future, e.g.:
-    // MENU: 'menu-theme.mp3',
-    // VICTORY: 'victory-theme.mp3',
 } as const;
+
+// Available music tracks in music-tracks folder (update this list when adding new tracks)
+export const AVAILABLE_MUSIC_TRACKS = [
+    'Tidal Waves.mp3',
+    'Aquatic Pulse.mp3',
+    'Seashells & Squids.mp3',
+    'Abyssal Drift.mp3',
+    'Sunken Dreams.mp3',
+] as const;
 
 export class SoundManager {
     private masterVolume: number = 0.5; // Default master volume (50%)
@@ -19,11 +25,14 @@ export class SoundManager {
     private explosionSoundCooldown: number = 200; // milliseconds
     
     // Music system
-    private musicVolume: number = 0.3; // Default music volume (30%)
+    private musicVolume: number = 0.25; // Default music volume (25%)
     private musicEnabled: boolean = true;
     private musicSource: AudioBufferSourceNode | null = null;
     private musicGainNode: GainNode | null = null;
     private currentMusicTrack: string | null = null;
+    private selectedMusicTrack: string = MUSIC_TRACKS.NORMAL; // User-selected track (for manual selection)
+    private loopTrack: boolean = false; // Loop current track (default OFF)
+    private currentTrackIndex: number = 0; // Current index in AVAILABLE_MUSIC_TRACKS for sequential playback
 
     constructor() {
         // Initialize audio context on first user interaction
@@ -421,9 +430,13 @@ export class SoundManager {
                 this.musicGainNode = null;
             }
         } else {
-            // Music re-enabled - restart the current track if we have one
-            if (this.currentMusicTrack) {
+            // Music re-enabled - restart the current track if we have one, or start sequence
+            if (this.currentMusicTrack && this.currentMusicTrack !== MUSIC_TRACKS.BOSS) {
                 this.playMusic(this.currentMusicTrack);
+            } else if (!this.currentMusicTrack || this.currentMusicTrack === MUSIC_TRACKS.BOSS) {
+                // Start from current position in sequence
+                const trackToPlay = AVAILABLE_MUSIC_TRACKS[this.currentTrackIndex] || AVAILABLE_MUSIC_TRACKS[0];
+                this.playMusic(trackToPlay);
             }
         }
         this.updateMusicVolume();
@@ -433,11 +446,67 @@ export class SoundManager {
         return this.musicEnabled;
     }
 
+    setSelectedMusicTrack(trackName: string) {
+        this.selectedMusicTrack = trackName;
+        localStorage.setItem('selectedMusicTrack', trackName);
+        // Update current track index
+        const index = AVAILABLE_MUSIC_TRACKS.indexOf(trackName as any);
+        if (index !== -1) {
+            this.currentTrackIndex = index;
+        }
+        // Restart music if it's currently playing and we're not in boss fight
+        if (this.musicEnabled && this.currentMusicTrack && this.currentMusicTrack !== MUSIC_TRACKS.BOSS) {
+            this.playMusic(trackName);
+        }
+    }
+
+    getSelectedMusicTrack(): string {
+        return this.selectedMusicTrack;
+    }
+
+    setLoopTrack(enabled: boolean) {
+        this.loopTrack = enabled;
+        localStorage.setItem('loopTrack', enabled.toString());
+        // If currently playing a normal track, update loop behavior
+        if (this.musicSource && this.currentMusicTrack && this.currentMusicTrack !== MUSIC_TRACKS.BOSS) {
+            // Restart current track with new loop setting
+            this.playMusic(this.currentMusicTrack);
+        }
+    }
+
+    getLoopTrack(): boolean {
+        return this.loopTrack;
+    }
+
+    async playNextTrackInSequence() {
+        // Find current track index
+        const currentIndex = AVAILABLE_MUSIC_TRACKS.indexOf(this.currentMusicTrack as any);
+        if (currentIndex === -1) {
+            // Current track not in list, start from beginning
+            this.currentTrackIndex = 0;
+        } else {
+            // Move to next track
+            this.currentTrackIndex = (currentIndex + 1) % AVAILABLE_MUSIC_TRACKS.length;
+        }
+        
+        const nextTrack = AVAILABLE_MUSIC_TRACKS[this.currentTrackIndex];
+        this.selectedMusicTrack = nextTrack;
+        await this.playMusic(nextTrack);
+    }
+
     async playMusic(trackName: string) {
         if (!this.musicEnabled) return;
         
         // Stop current music if playing
         this.stopMusic();
+        
+        // Update current track index if this is a normal track
+        if (trackName !== MUSIC_TRACKS.BOSS) {
+            const index = AVAILABLE_MUSIC_TRACKS.indexOf(trackName as any);
+            if (index !== -1) {
+                this.currentTrackIndex = index;
+            }
+        }
         
         if (!this.audioContext) {
             await this.initAudioContext();
@@ -450,27 +519,41 @@ export class SoundManager {
         }
 
         try {
-            const path = this.getSoundUrl(`AUDIO/Custom/${trackName}`);
+            // Determine path based on track type (boss music vs normal music)
+            let path: string;
+            if (trackName === MUSIC_TRACKS.BOSS) {
+                // Boss music is in Custom folder
+                path = this.getSoundUrl(`AUDIO/Custom/${trackName}`);
+            } else {
+                // Normal music tracks are in music-tracks folder
+                path = this.getSoundUrl(`AUDIO/Custom/music-tracks/${trackName}`);
+            }
             const arrayBuffer = await this.loadSound(path);
             const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
             
-            const playLoop = () => {
+            const playTrack = () => {
                 if (!this.audioContext || !this.musicEnabled) return;
                 
                 const source = this.audioContext.createBufferSource();
                 const gainNode = this.audioContext.createGain();
                 
                 source.buffer = audioBuffer;
-                source.loop = true;
+                // Only loop if loopTrack is enabled AND we're not in boss fight
+                source.loop = this.loopTrack && trackName !== MUSIC_TRACKS.BOSS;
                 gainNode.gain.value = this.musicVolume * this.masterVolume;
                 
                 source.connect(gainNode);
                 gainNode.connect(this.audioContext.destination);
                 
                 source.onended = () => {
-                    // Restart loop if it ends (shouldn't happen with loop=true, but safety)
                     if (this.musicSource === source && this.musicEnabled) {
-                        playLoop();
+                        // If looping is enabled, restart this track
+                        if (this.loopTrack && trackName !== MUSIC_TRACKS.BOSS) {
+                            playTrack();
+                        } else if (trackName !== MUSIC_TRACKS.BOSS) {
+                            // Not looping - play next track in sequence
+                            this.playNextTrackInSequence();
+                        }
                     }
                 };
                 
@@ -480,7 +563,7 @@ export class SoundManager {
                 source.start(0);
             };
             
-            playLoop();
+            playTrack();
         } catch (error) {
             console.error(`Error playing music ${trackName}:`, error);
         }
@@ -526,6 +609,25 @@ export class SoundManager {
         const savedMusicEnabled = localStorage.getItem('musicEnabled');
         if (savedMusicEnabled !== null) {
             this.musicEnabled = savedMusicEnabled === 'true';
+        }
+        
+        const savedSelectedTrack = localStorage.getItem('selectedMusicTrack');
+        if (savedSelectedTrack !== null) {
+            this.selectedMusicTrack = savedSelectedTrack;
+            // Update current track index
+            const index = AVAILABLE_MUSIC_TRACKS.indexOf(savedSelectedTrack as any);
+            if (index !== -1) {
+                this.currentTrackIndex = index;
+            }
+        } else {
+            // Default to first track (Tidal Waves)
+            this.currentTrackIndex = 0;
+            this.selectedMusicTrack = AVAILABLE_MUSIC_TRACKS[0];
+        }
+        
+        const savedLoopTrack = localStorage.getItem('loopTrack');
+        if (savedLoopTrack !== null) {
+            this.loopTrack = savedLoopTrack === 'true';
         }
     }
 }

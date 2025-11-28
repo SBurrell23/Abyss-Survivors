@@ -504,6 +504,18 @@
           margin-bottom: 30px;
           min-width: 400px;
       }
+      .settings-container {
+          display: flex;
+          gap: 50px;
+          justify-content: center;
+          align-items: flex-start;
+          flex-wrap: wrap;
+      }
+      .settings-column {
+          display: flex;
+          flex-direction: column;
+          min-width: 400px;
+      }
       .settings-item label {
           display: block;
           color: #fff;
@@ -938,29 +950,48 @@
       <!-- Settings Menu -->
       <div id="settings-menu" class="ui-element">
           <h3>Settings</h3>
-          <div class="settings-item">
-              <label for="volume-slider">Master Volume</label>
-              <input type="range" id="volume-slider" min="0" max="100" value="50" step="1">
-              <div class="settings-value" id="volume-value">50%</div>
-          </div>
-          <div class="settings-item">
-              <label for="ambient-sound-checkbox" class="checkbox-label">
-                  <input type="checkbox" id="ambient-sound-checkbox" checked>
-                  <span class="checkbox-custom"></span>
-                  <span>Aquatic Ambience</span>
-              </label>
-          </div>
-          <div class="settings-item">
-              <label for="music-volume-slider">Music Volume</label>
-              <input type="range" id="music-volume-slider" min="0" max="100" value="30" step="1">
-              <div class="settings-value" id="music-volume-value">30%</div>
-          </div>
-          <div class="settings-item">
-              <label for="music-checkbox" class="checkbox-label">
-                  <input type="checkbox" id="music-checkbox" checked>
-                  <span class="checkbox-custom"></span>
-                  <span>Music</span>
-              </label>
+          <div class="settings-container">
+              <div class="settings-column">
+                  <h4 style="margin-bottom: 20px; color: #00bcd4; text-align: center;">Audio</h4>
+                  <div class="settings-item">
+                      <label for="volume-slider">Master Volume</label>
+                      <input type="range" id="volume-slider" min="0" max="100" value="50" step="1">
+                      <div class="settings-value" id="volume-value">50%</div>
+                  </div>
+                  <div class="settings-item">
+                      <label for="ambient-sound-checkbox" class="checkbox-label">
+                          <input type="checkbox" id="ambient-sound-checkbox" checked>
+                          <span class="checkbox-custom"></span>
+                          <span>Aquatic Ambience</span>
+                      </label>
+                  </div>
+              </div>
+              <div class="settings-column">
+                  <h4 style="margin-bottom: 20px; color: #00bcd4; text-align: center;">Music</h4>
+                  <div class="settings-item">
+                      <label for="music-volume-slider">Music Volume</label>
+                      <input type="range" id="music-volume-slider" min="0" max="100" value="25" step="1">
+                      <div class="settings-value" id="music-volume-value">25%</div>
+                  </div>
+                  <div class="settings-item">
+                      <label for="music-track-select">Music Track</label>
+                      <select id="music-track-select" style="width: 100%; padding: 8px; background: #333; border: 2px solid #555; border-radius: 4px; color: #fff; font-size: 16px; cursor: pointer;">
+                          <!-- Options will be populated by JavaScript -->
+                      </select>
+                  </div>
+                  <div class="settings-item" style="display: flex; gap: 30px; justify-content: center;">
+                      <label for="music-checkbox" class="checkbox-label">
+                          <input type="checkbox" id="music-checkbox" checked>
+                          <span class="checkbox-custom"></span>
+                          <span>Music</span>
+                      </label>
+                      <label for="loop-track-checkbox" class="checkbox-label">
+                          <input type="checkbox" id="loop-track-checkbox">
+                          <span class="checkbox-custom"></span>
+                          <span>Loop Track</span>
+                      </label>
+                  </div>
+              </div>
           </div>
           <button id="settings-close-btn">RESUME (ESC)</button>
       </div>

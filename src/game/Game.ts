@@ -13,7 +13,7 @@ import { Vector2 } from './utils';
 import { UpgradeManager } from './UpgradeManager';
 import monstersData from './data/monsters.json';
 import { SpriteFactory } from './graphics/SpriteFactory';
-import { SoundManager, MUSIC_TRACKS } from './SoundManager';
+import { SoundManager, MUSIC_TRACKS, AVAILABLE_MUSIC_TRACKS } from './SoundManager';
 
 interface Particle {
     x: number; 
@@ -159,10 +159,12 @@ export class Game {
       const ambientCheckbox = document.getElementById('ambient-sound-checkbox') as HTMLInputElement;
       const musicVolumeSlider = document.getElementById('music-volume-slider') as HTMLInputElement;
       const musicVolumeValue = document.getElementById('music-volume-value');
+      const musicTrackSelect = document.getElementById('music-track-select') as HTMLSelectElement;
       const musicCheckbox = document.getElementById('music-checkbox') as HTMLInputElement;
+      const loopTrackCheckbox = document.getElementById('loop-track-checkbox') as HTMLInputElement;
       const closeBtn = document.getElementById('settings-close-btn');
       
-      if (!settingsBtn || !settingsMenu || !volumeSlider || !volumeValue || !ambientCheckbox || !musicVolumeSlider || !musicVolumeValue || !musicCheckbox || !closeBtn) return;
+      if (!settingsBtn || !settingsMenu || !volumeSlider || !volumeValue || !ambientCheckbox || !musicVolumeSlider || !musicVolumeValue || !musicTrackSelect || !musicCheckbox || !loopTrackCheckbox || !closeBtn) return;
       
       const openMenu = () => {
           // Close Esc menu if it's open
@@ -212,9 +214,40 @@ export class Game {
       musicVolumeSlider.value = (savedMusicVolume * 100).toString();
       musicVolumeValue!.innerText = `${Math.round(savedMusicVolume * 100)}%`;
       
+      // Populate music track selector
+      AVAILABLE_MUSIC_TRACKS.forEach(track => {
+          const option = document.createElement('option');
+          option.value = track;
+          // Remove .mp3 extension for display name
+          option.textContent = track.replace('.mp3', '');
+          musicTrackSelect.appendChild(option);
+      });
+      
+      // Update music track selector from saved value
+      const selectedTrack = this.soundManager.getSelectedMusicTrack();
+      musicTrackSelect.value = selectedTrack;
+      
+      // Handle music track selection change
+      musicTrackSelect.onchange = (e: any) => {
+          const trackName = e.target.value;
+          this.soundManager.setSelectedMusicTrack(trackName);
+          this.soundManager.playUIClick();
+      };
+      
       // Update music checkbox from saved value
       const musicEnabled = this.soundManager.getMusicEnabled();
       musicCheckbox.checked = musicEnabled;
+      
+      // Update loop track checkbox from saved value
+      const loopTrackEnabled = this.soundManager.getLoopTrack();
+      loopTrackCheckbox.checked = loopTrackEnabled;
+      
+      // Handle loop track checkbox change
+      loopTrackCheckbox.onchange = () => {
+          const enabled = loopTrackCheckbox.checked;
+          this.soundManager.setLoopTrack(enabled);
+          this.soundManager.playUIClick();
+      };
       
       // Handle music checkbox change
       musicCheckbox.onchange = () => {
@@ -1200,7 +1233,7 @@ export class Game {
       this.soundManager.playAmbientLoop(ambientVolume);
       
       // Start game music (Aquatic Pulse)
-      this.soundManager.playMusic(MUSIC_TRACKS.NORMAL);
+      this.soundManager.playMusic(this.soundManager.getSelectedMusicTrack());
       
       // Start game loop
       requestAnimationFrame(this.loop.bind(this));
@@ -1262,8 +1295,9 @@ export class Game {
     // Start ambient background music loop (volume will be set based on settings)
     const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.195 : 0;
     this.soundManager.playAmbientLoop(ambientVolume);
-    // Start game music (Aquatic Pulse)
-    this.soundManager.playMusic(MUSIC_TRACKS.NORMAL);
+    // Start game music (start with first track in sequence - Tidal Waves)
+    const firstTrack = AVAILABLE_MUSIC_TRACKS[0];
+    this.soundManager.playMusic(firstTrack);
     requestAnimationFrame(this.loop.bind(this));
   }
 
@@ -1835,7 +1869,17 @@ export class Game {
         }
     }
 
-    this.enemies.push(new Enemy(this, spawnPos.x, spawnPos.y, selectedMonster));
+    // Boost stats for enemies spawned during boss fight (2x)
+    let finalMonsterStats = selectedMonster;
+    if (this.isBossFight) {
+        finalMonsterStats = {
+            ...selectedMonster,
+            hp: selectedMonster.hp * 2.0,
+            speed: selectedMonster.speed * 2.0
+        };
+    }
+    
+    this.enemies.push(new Enemy(this, spawnPos.x, spawnPos.y, finalMonsterStats));
      
      // Scavenger Protocol Drop? (Only on kill, moved to checkCollisions or Enemy)
   }
@@ -2178,8 +2222,9 @@ export class Game {
   winGame() {
       this.isGameOver = true;
       this.soundManager.playVictory();
-      // Switch back to normal game music
-      this.soundManager.playMusic(MUSIC_TRACKS.NORMAL);
+      // Switch back to normal game music (continue sequence from current track)
+      const currentTrack = this.soundManager.getSelectedMusicTrack();
+      this.soundManager.playMusic(currentTrack);
       // Show Victory Screen
       const deathScreen = document.getElementById('death-screen');
       if (deathScreen) {

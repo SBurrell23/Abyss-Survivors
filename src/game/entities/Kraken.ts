@@ -23,8 +23,8 @@ export class Kraken {
     
     tentacles: {pos: Vector2, angle: number, length: number}[] = [];
     
-    // Damage cap system: max 49 HP per 100ms window (490 HP per second equivalent)
-    damageCapPerWindow: number = 49;
+    // Damage cap system: max 99 HP per 100ms window (990 HP per second equivalent)
+    damageCapPerWindow: number = 99;
     damageThisWindow: number = 0;
     damageTimer: number = 0;
     damageWindowDuration: number = 0.1; // 100ms window
@@ -210,11 +210,11 @@ export class Kraken {
                 monsterType = hardestMonsters[Math.floor(Math.random() * hardestMonsters.length)] || monsters[9];
             }
             
-            // Boost stats for boss fight minions
+            // Boost stats for boss fight minions (2x for all phases)
             const boostedStats: MonsterStats = {
                 ...monsterType,
-                hp: monsterType.hp * (this.phase === 1 ? 1.0 : this.phase === 2 ? 1.5 : 2.0),
-                speed: monsterType.speed * (this.phase === 1 ? 1.0 : this.phase === 2 ? 1.3 : 1.6)
+                hp: monsterType.hp * 2.0,
+                speed: monsterType.speed * 2.0
             };
             
             this.game.enemies.push(new Enemy(this.game, pos.x, pos.y, boostedStats));
@@ -319,7 +319,7 @@ export class Kraken {
         let cappedDamage = amount;
         
         if (!bypassCap) {
-            // Apply damage cap: max 49 HP per 100ms window
+            // Apply damage cap: max 99 HP per 100ms window
             const remainingDamageBudget = this.damageCapPerWindow - this.damageThisWindow;
             
             if (remainingDamageBudget <= 0) {
