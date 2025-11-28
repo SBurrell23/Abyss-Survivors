@@ -426,6 +426,11 @@
            padding: 0;
            transform: translateY(2px);
        }
+       #settings-btn.active {
+           border-color: #00bcd4;
+           box-shadow: 0 0 15px rgba(0, 188, 212, 0.6), 0 0 10px rgba(0, 0, 0, 0.5);
+           background: rgba(0, 188, 212, 0.2);
+       }
        #settings-btn:hover {
            background: rgba(0, 0, 0, 0.8);
            border-color: #00bcd4;
@@ -475,6 +480,11 @@
            border-color: #00bcd4;
            transform: scale(1.1);
            box-shadow: 0 0 20px rgba(0, 188, 212, 0.5);
+       }
+       #upgrade-menu-btn.active {
+           border-color: #00bcd4;
+           box-shadow: 0 0 15px rgba(0, 188, 212, 0.6), 0 0 10px rgba(0, 0, 0, 0.5);
+           background: rgba(0, 188, 212, 0.2);
        }
 
        /* Settings Menu */
@@ -993,7 +1003,7 @@
                   </div>
               </div>
           </div>
-          <button id="settings-close-btn">RESUME (ESC)</button>
+          <button id="settings-close-btn">RESUME</button>
       </div>
 
       <!-- Esc Menu (Upgrades Display) -->
@@ -1002,7 +1012,7 @@
           <div id="esc-menu-upgrades-container">
               <!-- Upgrades will be populated here -->
           </div>
-          <button id="esc-menu-close-btn">RESUME (ESC)</button>
+          <button id="esc-menu-close-btn">RESUME</button>
       </div>
     </div>
     <canvas id="gameCanvas"></canvas>

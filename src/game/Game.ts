@@ -108,14 +108,45 @@ export class Game {
     window.addEventListener('keydown', (e) => {
         if (this.isMinigameActive && e.code === 'Space') {
             this.stopMinigame();
+            return;
         }
         // Toggle Debug Menu (Ctrl + `)
         if (e.key === '`' && e.ctrlKey) {
             this.toggleDebugMenu();
+            return;
         }
-        // Toggle Esc Menu
+        // Escape key opens/closes Settings menu
         if (e.key === 'Escape') {
-            this.toggleEscMenu();
+            this.toggleSettingsMenu();
+            return;
+        }
+        // Space bar opens/closes Upgrade Dictionarium or closes Settings (when not in minigame)
+        // Allow during game over/win screens (same as button click)
+        if (e.code === 'Space' && !this.isMinigameActive) {
+            const settingsMenu = document.getElementById('settings-menu');
+            const escMenu = document.getElementById('esc-menu');
+            const upgradeMenu = document.getElementById('upgrade-menu');
+            
+            // If upgrade menu (level up) is open, don't allow closing (player must select an upgrade)
+            if (upgradeMenu && upgradeMenu.style.display === 'flex') {
+                return;
+            }
+            
+            // If settings menu is open, close it
+            if (settingsMenu && settingsMenu.style.display === 'flex') {
+                this.closeSettingsMenu();
+                return;
+            }
+            
+            // If Upgrade Dictionarium is open, close it
+            if (escMenu && escMenu.style.display === 'flex') {
+                this.closeEscMenu();
+                return;
+            }
+            
+            // Otherwise open Upgrade Dictionarium (allow even when paused, e.g., during game over/win screens)
+            this.openEscMenu();
+            return;
         }
     });
 
@@ -175,6 +206,7 @@ export class Game {
           settingsMenu.style.display = 'flex';
           this.isPaused = true;
           this.soundManager.playUIClick();
+          this.updateSettingsButtonHighlight();
       };
       
       const closeMenu = () => {
@@ -346,15 +378,12 @@ export class Game {
       const upgradeOpen = upgradeMenu && upgradeMenu.style.display === 'flex';
       
       if (settingsOpen) {
-          // Close settings menu if Esc is pressed
+          // Close settings menu if open
           this.closeSettingsMenu();
-          return;
       }
       
-      if (upgradeOpen) {
-          // Don't allow closing upgrade menu with Esc (player must select an upgrade)
-          return;
-      }
+      // Note: Upgrade menu can be closed with Space bar, but not with this function
+      // (Space bar handler handles closing upgrade menu separately)
       
       const isOpen = escMenu.style.display === 'flex';
       
@@ -365,6 +394,72 @@ export class Game {
       }
   }
   
+  toggleSettingsMenu() {
+      const settingsMenu = document.getElementById('settings-menu');
+      const escMenu = document.getElementById('esc-menu');
+      const upgradeMenu = document.getElementById('upgrade-menu');
+      
+      if (!settingsMenu) return;
+      
+      // Don't allow opening settings during minigame or upgrade selection
+      if (this.isMinigameActive) return;
+      
+      // Check if other menus are open - close them first
+      const escOpen = escMenu && escMenu.style.display === 'flex';
+      const upgradeOpen = upgradeMenu && upgradeMenu.style.display === 'flex';
+      
+      if (upgradeOpen) {
+          // Don't allow closing upgrade menu with Escape (player must select an upgrade)
+          return;
+      }
+      
+      if (escOpen) {
+          // Close Esc menu if open
+          this.closeEscMenu();
+      }
+      
+      const isOpen = settingsMenu.style.display === 'flex';
+      
+      if (isOpen) {
+          this.closeSettingsMenu();
+      } else {
+          settingsMenu.style.display = 'flex';
+          this.isPaused = true;
+          this.soundManager.playUIClick();
+          this.updateSettingsButtonHighlight();
+      }
+  }
+  
+  updateUpgradeButtonHighlight() {
+      const upgradeMenuBtn = document.getElementById('upgrade-menu-btn');
+      const escMenu = document.getElementById('esc-menu');
+      
+      if (!upgradeMenuBtn) return;
+      
+      const escOpen = escMenu && escMenu.style.display === 'flex';
+      
+      if (escOpen) {
+          upgradeMenuBtn.classList.add('active');
+      } else {
+          upgradeMenuBtn.classList.remove('active');
+      }
+  }
+  
+  updateSettingsButtonHighlight() {
+      const settingsBtn = document.getElementById('settings-btn');
+      const settingsMenu = document.getElementById('settings-menu');
+      
+      if (!settingsBtn) return;
+      
+      const settingsOpen = settingsMenu && settingsMenu.style.display === 'flex';
+      
+      if (settingsOpen) {
+          settingsBtn.classList.add('active');
+      } else {
+          settingsBtn.classList.remove('active');
+      }
+  }
+
   closeSettingsMenu() {
       const settingsMenu = document.getElementById('settings-menu');
       if (!settingsMenu) return;
@@ -373,6 +468,7 @@ export class Game {
       this.isPaused = false;
       this.lastTime = performance.now();
       this.soundManager.playUIClick();
+      this.updateSettingsButtonHighlight();
   }
   
   openEscMenu() {
@@ -388,6 +484,7 @@ export class Game {
       escMenu.style.display = 'flex';
       this.isPaused = true;
       this.soundManager.playUIClick();
+      this.updateUpgradeButtonHighlight();
   }
   
   closeEscMenu() {
@@ -396,6 +493,7 @@ export class Game {
       
       escMenu.style.display = 'none';
       this.isPaused = false;
+      this.updateUpgradeButtonHighlight();
       this.lastTime = performance.now();
       this.soundManager.playUIClick();
   }
@@ -1109,6 +1207,9 @@ export class Game {
       this.kraken = null;
       this.trenchX = null;
       
+      // Force stop boss music and clear its state
+      this.soundManager.stopBossMusic();
+      
       // Reset minigame state
       this.isMinigameActive = false;
       this.minigameCursor = 0;
@@ -1232,8 +1333,17 @@ export class Game {
       const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.195 : 0;
       this.soundManager.playAmbientLoop(ambientVolume);
       
-      // Start game music (Aquatic Pulse)
-      this.soundManager.playMusic(this.soundManager.getSelectedMusicTrack());
+      // NUCLEAR OPTION: Force stop ALL music immediately
+      this.soundManager.stopBossMusic();
+      
+      // Wait longer to ensure audio context processes the stop
+      setTimeout(() => {
+          // Stop again to be absolutely sure
+          this.soundManager.stopBossMusic();
+          // Start normal music
+          const normalTrack = this.soundManager.getSelectedMusicTrack();
+          this.soundManager.playMusic(normalTrack);
+      }, 200);
       
       // Start game loop
       requestAnimationFrame(this.loop.bind(this));
@@ -2222,9 +2332,13 @@ export class Game {
   winGame() {
       this.isGameOver = true;
       this.soundManager.playVictory();
-      // Switch back to normal game music (continue sequence from current track)
-      const currentTrack = this.soundManager.getSelectedMusicTrack();
-      this.soundManager.playMusic(currentTrack);
+      // Force stop boss music and switch back to normal game music
+      this.soundManager.stopBossMusic();
+      // Wait a moment before starting normal music to ensure boss music is stopped
+      setTimeout(() => {
+          const currentTrack = this.soundManager.getSelectedMusicTrack();
+          this.soundManager.playMusic(currentTrack);
+      }, 50);
       // Show Victory Screen
       const deathScreen = document.getElementById('death-screen');
       if (deathScreen) {
@@ -2591,6 +2705,7 @@ export class Game {
       this.isPaused = true;
       menu.style.display = 'flex';
       optionsContainer.innerHTML = '';
+      this.updateUpgradeButtonHighlight();
 
       options.forEach(opt => {
           const el = document.createElement('div');
@@ -2616,6 +2731,7 @@ export class Game {
       this.isPaused = false;
       this.lastTime = performance.now();
       this.updateUI();
+      this.updateUpgradeButtonHighlight();
   }
 
   updateUI() {

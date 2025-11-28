@@ -33,6 +33,7 @@ export class SoundManager {
     private selectedMusicTrack: string = MUSIC_TRACKS.NORMAL; // User-selected track (for manual selection)
     private loopTrack: boolean = false; // Loop current track (default OFF)
     private currentTrackIndex: number = 0; // Current index in AVAILABLE_MUSIC_TRACKS for sequential playback
+    private allMusicSources: Set<AudioBufferSourceNode> = new Set(); // Track ALL music sources
 
     constructor() {
         // Initialize audio context on first user interaction
@@ -497,8 +498,13 @@ export class SoundManager {
     async playMusic(trackName: string) {
         if (!this.musicEnabled) return;
         
-        // Stop current music if playing
-        this.stopMusic();
+        // If we're switching FROM boss music TO normal music, use stopBossMusic
+        if (this.currentMusicTrack === MUSIC_TRACKS.BOSS && trackName !== MUSIC_TRACKS.BOSS) {
+            this.stopBossMusic();
+        } else {
+            // Stop current music if playing
+            this.stopMusic();
+        }
         
         // Update current track index if this is a normal track
         if (trackName !== MUSIC_TRACKS.BOSS) {
@@ -546,6 +552,8 @@ export class SoundManager {
                 gainNode.connect(this.audioContext.destination);
                 
                 source.onended = () => {
+                    // Remove from tracking set when source ends
+                    this.allMusicSources.delete(source);
                     if (this.musicSource === source && this.musicEnabled) {
                         // If looping is enabled, restart this track
                         if (this.loopTrack && trackName !== MUSIC_TRACKS.BOSS) {
@@ -560,6 +568,8 @@ export class SoundManager {
                 this.musicSource = source;
                 this.musicGainNode = gainNode;
                 this.currentMusicTrack = trackName;
+                // Track this source
+                this.allMusicSources.add(source);
                 source.start(0);
             };
             
@@ -572,14 +582,65 @@ export class SoundManager {
     stopMusic() {
         if (this.musicSource) {
             try {
+                // Remove from tracking set
+                this.allMusicSources.delete(this.musicSource);
+                // Disconnect nodes first
+                if (this.musicGainNode) {
+                    this.musicGainNode.disconnect();
+                }
+                this.musicSource.disconnect();
+                // Clear callback
+                this.musicSource.onended = null;
+                // Stop the source
                 this.musicSource.stop();
             } catch (e) {
-                // Ignore if already stopped
+                // Ignore if already stopped or disconnected
             }
             this.musicSource = null;
             this.musicGainNode = null;
             // Don't clear currentMusicTrack - we want to preserve it so we can restart later
         }
+    }
+    
+    stopBossMusic() {
+        // NUCLEAR OPTION: Stop ALL music sources, not just the current one
+        // This ensures boss music stops even if there are multiple sources or state issues
+        
+        // Stop and disconnect ALL tracked music sources
+        this.allMusicSources.forEach(source => {
+            try {
+                source.onended = null; // Clear callback
+                source.stop(); // Stop playback
+                source.disconnect(); // Disconnect from audio graph
+            } catch (e) {
+                // Ignore errors - source might already be stopped
+            }
+        });
+        this.allMusicSources.clear();
+        
+        // Also handle the current music source
+        if (this.musicSource) {
+            try {
+                // First, mute the gain node immediately to stop audio output
+                if (this.musicGainNode) {
+                    this.musicGainNode.gain.setValueAtTime(0, this.audioContext?.currentTime || 0);
+                    this.musicGainNode.disconnect();
+                }
+                // Clear callback before stopping
+                this.musicSource.onended = null;
+                // Stop the source
+                this.musicSource.stop();
+                // Disconnect the source
+                this.musicSource.disconnect();
+            } catch (e) {
+                // Ignore errors - source might already be stopped
+            }
+            this.musicSource = null;
+            this.musicGainNode = null;
+        }
+        
+        // Always clear boss music state
+        this.currentMusicTrack = null; // Clear ALL music state, not just boss
     }
 
     updateMusicVolume() {
