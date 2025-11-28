@@ -6,6 +6,8 @@ export class SoundManager {
     private playingSounds: Set<AudioBufferSourceNode> = new Set();
     private ambientSoundSource: AudioBufferSourceNode | null = null;
     private ambientGainNode: GainNode | null = null;
+    private lastExplosionSoundTime: number = 0;
+    private explosionSoundCooldown: number = 200; // milliseconds
 
     constructor() {
         // Initialize audio context on first user interaction
@@ -150,6 +152,13 @@ export class SoundManager {
     }
 
     playExplosion(volume: number = 0.25) {
+        // Throttle explosion sounds to prevent audio spam (especially during kraken fights)
+        const now = performance.now();
+        if (now - this.lastExplosionSoundTime < this.explosionSoundCooldown) {
+            return; // Skip playing sound if cooldown hasn't elapsed
+        }
+        
+        this.lastExplosionSoundTime = now;
         const sounds = [
             this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_1.wav'),
             this.getSoundUrl('AUDIO/Firework/SFX_Firework_Explosion_2.wav'),
