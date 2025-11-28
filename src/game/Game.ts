@@ -13,7 +13,7 @@ import { Vector2 } from './utils';
 import { UpgradeManager } from './UpgradeManager';
 import monstersData from './data/monsters.json';
 import { SpriteFactory } from './graphics/SpriteFactory';
-import { SoundManager } from './SoundManager';
+import { SoundManager, MUSIC_TRACKS } from './SoundManager';
 
 interface Particle {
     x: number; 
@@ -157,9 +157,12 @@ export class Game {
       const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
       const volumeValue = document.getElementById('volume-value');
       const ambientCheckbox = document.getElementById('ambient-sound-checkbox') as HTMLInputElement;
+      const musicVolumeSlider = document.getElementById('music-volume-slider') as HTMLInputElement;
+      const musicVolumeValue = document.getElementById('music-volume-value');
+      const musicCheckbox = document.getElementById('music-checkbox') as HTMLInputElement;
       const closeBtn = document.getElementById('settings-close-btn');
       
-      if (!settingsBtn || !settingsMenu || !volumeSlider || !volumeValue || !ambientCheckbox || !closeBtn) return;
+      if (!settingsBtn || !settingsMenu || !volumeSlider || !volumeValue || !ambientCheckbox || !musicVolumeSlider || !musicVolumeValue || !musicCheckbox || !closeBtn) return;
       
       const openMenu = () => {
           // Close Esc menu if it's open
@@ -202,6 +205,29 @@ export class Game {
           const enabled = ambientCheckbox.checked;
           this.soundManager.setAmbientSoundEnabled(enabled);
           this.soundManager.playUIClick();
+      };
+      
+      // Update music volume slider from saved value
+      const savedMusicVolume = this.soundManager.getMusicVolume();
+      musicVolumeSlider.value = (savedMusicVolume * 100).toString();
+      musicVolumeValue!.innerText = `${Math.round(savedMusicVolume * 100)}%`;
+      
+      // Update music checkbox from saved value
+      const musicEnabled = this.soundManager.getMusicEnabled();
+      musicCheckbox.checked = musicEnabled;
+      
+      // Handle music checkbox change
+      musicCheckbox.onchange = () => {
+          const enabled = musicCheckbox.checked;
+          this.soundManager.setMusicEnabled(enabled);
+          this.soundManager.playUIClick();
+      };
+      
+      // Handle music volume slider
+      musicVolumeSlider.oninput = (e: any) => {
+          const volume = parseInt(e.target.value) / 100;
+          this.soundManager.setMusicVolume(volume);
+          musicVolumeValue!.innerText = `${Math.round(volume * 100)}%`;
       };
       
       // Throttle sound playback to avoid too many sounds when dragging
@@ -1173,6 +1199,9 @@ export class Game {
       const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.195 : 0;
       this.soundManager.playAmbientLoop(ambientVolume);
       
+      // Start game music (Aquatic Pulse)
+      this.soundManager.playMusic(MUSIC_TRACKS.NORMAL);
+      
       // Start game loop
       requestAnimationFrame(this.loop.bind(this));
   }
@@ -1233,6 +1262,8 @@ export class Game {
     // Start ambient background music loop (volume will be set based on settings)
     const ambientVolume = this.soundManager.getAmbientSoundEnabled() ? 0.195 : 0;
     this.soundManager.playAmbientLoop(ambientVolume);
+    // Start game music (Aquatic Pulse)
+    this.soundManager.playMusic(MUSIC_TRACKS.NORMAL);
     requestAnimationFrame(this.loop.bind(this));
   }
 
@@ -1562,7 +1593,7 @@ export class Game {
         }
     } else {
         // Normal spawn rate increases with depth
-        spawnChance = 0.02 + (this.depth / 1000) * 0.16; // 18% at 1000m
+        spawnChance = 0.02 + (this.depth / 1000) * 0.14; // 18% at 1000m
     }
     
     if (Math.random() < spawnChance) { 
@@ -2097,6 +2128,12 @@ export class Game {
       
       // Play kraken entry roar (reduced by 40%)
       this.soundManager.playKrakenRoar(0.48, true);
+      
+      // Switch to kraken boss music
+      this.soundManager.playMusic(MUSIC_TRACKS.BOSS);
+      
+      // Switch to kraken boss music
+      this.soundManager.playMusic(MUSIC_TRACKS.BOSS);
   }
   
   spawnBossObstacles(centerX: number, centerY: number, arenaSize: number) {
@@ -2141,6 +2178,8 @@ export class Game {
   winGame() {
       this.isGameOver = true;
       this.soundManager.playVictory();
+      // Switch back to normal game music
+      this.soundManager.playMusic(MUSIC_TRACKS.NORMAL);
       // Show Victory Screen
       const deathScreen = document.getElementById('death-screen');
       if (deathScreen) {

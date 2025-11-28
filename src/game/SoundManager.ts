@@ -1,5 +1,14 @@
+// Music track configuration - easily extensible for future tracks
+export const MUSIC_TRACKS = {
+    NORMAL: 'Aquatic Pulse - game music.mp3',  // Normal gameplay music
+    BOSS: 'kraken-boss-music.mp3',            // Kraken boss fight music
+    // Add more tracks here in the future, e.g.:
+    // MENU: 'menu-theme.mp3',
+    // VICTORY: 'victory-theme.mp3',
+} as const;
+
 export class SoundManager {
-    private masterVolume: number = 1.0;
+    private masterVolume: number = 0.5; // Default master volume (50%)
     private ambientSoundEnabled: boolean = true;
     private audioContext: AudioContext | null = null;
     private soundCache: Map<string, ArrayBuffer> = new Map();
@@ -8,6 +17,13 @@ export class SoundManager {
     private ambientGainNode: GainNode | null = null;
     private lastExplosionSoundTime: number = 0;
     private explosionSoundCooldown: number = 200; // milliseconds
+    
+    // Music system
+    private musicVolume: number = 0.3; // Default music volume (30%)
+    private musicEnabled: boolean = true;
+    private musicSource: AudioBufferSourceNode | null = null;
+    private musicGainNode: GainNode | null = null;
+    private currentMusicTrack: string | null = null;
 
     constructor() {
         // Initialize audio context on first user interaction
@@ -28,6 +44,8 @@ export class SoundManager {
         localStorage.setItem('masterVolume', this.masterVolume.toString());
         // Update ambient sound volume
         this.updateAmbientVolume();
+        // Update music volume
+        this.updateMusicVolume();
     }
 
     getMasterVolume(): number {
@@ -377,6 +395,117 @@ export class SoundManager {
         this.updateAmbientVolume();
     }
 
+    // Music system methods
+    setMusicVolume(volume: number) {
+        this.musicVolume = Math.max(0, Math.min(1, volume));
+        localStorage.setItem('musicVolume', this.musicVolume.toString());
+        this.updateMusicVolume();
+    }
+
+    getMusicVolume(): number {
+        return this.musicVolume;
+    }
+
+    setMusicEnabled(enabled: boolean) {
+        this.musicEnabled = enabled;
+        localStorage.setItem('musicEnabled', enabled.toString());
+        if (!enabled) {
+            // Stop music but preserve track name so we can restart it later
+            if (this.musicSource) {
+                try {
+                    this.musicSource.stop();
+                } catch (e) {
+                    // Ignore if already stopped
+                }
+                this.musicSource = null;
+                this.musicGainNode = null;
+            }
+        } else {
+            // Music re-enabled - restart the current track if we have one
+            if (this.currentMusicTrack) {
+                this.playMusic(this.currentMusicTrack);
+            }
+        }
+        this.updateMusicVolume();
+    }
+
+    getMusicEnabled(): boolean {
+        return this.musicEnabled;
+    }
+
+    async playMusic(trackName: string) {
+        if (!this.musicEnabled) return;
+        
+        // Stop current music if playing
+        this.stopMusic();
+        
+        if (!this.audioContext) {
+            await this.initAudioContext();
+            if (!this.audioContext) return;
+        }
+
+        // Resume audio context if suspended
+        if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+        }
+
+        try {
+            const path = this.getSoundUrl(`AUDIO/Custom/${trackName}`);
+            const arrayBuffer = await this.loadSound(path);
+            const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
+            
+            const playLoop = () => {
+                if (!this.audioContext || !this.musicEnabled) return;
+                
+                const source = this.audioContext.createBufferSource();
+                const gainNode = this.audioContext.createGain();
+                
+                source.buffer = audioBuffer;
+                source.loop = true;
+                gainNode.gain.value = this.musicVolume * this.masterVolume;
+                
+                source.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                source.onended = () => {
+                    // Restart loop if it ends (shouldn't happen with loop=true, but safety)
+                    if (this.musicSource === source && this.musicEnabled) {
+                        playLoop();
+                    }
+                };
+                
+                this.musicSource = source;
+                this.musicGainNode = gainNode;
+                this.currentMusicTrack = trackName;
+                source.start(0);
+            };
+            
+            playLoop();
+        } catch (error) {
+            console.error(`Error playing music ${trackName}:`, error);
+        }
+    }
+
+    stopMusic() {
+        if (this.musicSource) {
+            try {
+                this.musicSource.stop();
+            } catch (e) {
+                // Ignore if already stopped
+            }
+            this.musicSource = null;
+            this.musicGainNode = null;
+            // Don't clear currentMusicTrack - we want to preserve it so we can restart later
+        }
+    }
+
+    updateMusicVolume() {
+        if (this.musicGainNode) {
+            const baseVolume = this.musicEnabled ? this.musicVolume : 0;
+            this.musicGainNode.gain.value = baseVolume * this.masterVolume;
+        }
+    }
+
     // Load volume from localStorage on init
     loadSettings() {
         const saved = localStorage.getItem('masterVolume');
@@ -387,6 +516,16 @@ export class SoundManager {
         const savedAmbient = localStorage.getItem('ambientSoundEnabled');
         if (savedAmbient !== null) {
             this.ambientSoundEnabled = savedAmbient === 'true';
+        }
+        
+        const savedMusicVolume = localStorage.getItem('musicVolume');
+        if (savedMusicVolume !== null) {
+            this.musicVolume = parseFloat(savedMusicVolume);
+        }
+        
+        const savedMusicEnabled = localStorage.getItem('musicEnabled');
+        if (savedMusicEnabled !== null) {
+            this.musicEnabled = savedMusicEnabled === 'true';
         }
     }
 }
