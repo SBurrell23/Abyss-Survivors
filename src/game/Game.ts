@@ -390,13 +390,15 @@ export class Game {
       const settingsOpen = settingsMenu && settingsMenu.style.display === 'flex';
       const upgradeOpen = upgradeMenu && upgradeMenu.style.display === 'flex';
       
+      // Don't allow opening Esc menu if upgrade menu is open (player must select an upgrade)
+      if (upgradeOpen) {
+          return;
+      }
+      
       if (settingsOpen) {
           // Close settings menu if open
           this.closeSettingsMenu();
       }
-      
-      // Note: Upgrade menu can be closed with Space bar, but not with this function
-      // (Space bar handler handles closing upgrade menu separately)
       
       const isOpen = escMenu.style.display === 'flex';
       
